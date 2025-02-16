@@ -8,7 +8,10 @@ export type TileType =
   | "DUCK" // 오리
   | "PHEASANT" // 꿩
   | "TREE" // 나무
+  | "CABIN" // 오두막
   | "EMPTY"; // 빈 칸
+
+export type Direction = "UP" | "DOWN" | "LEFT" | "RIGHT";
 
 export interface Position {
   row: number;
@@ -19,6 +22,7 @@ export interface Tile {
   type: TileType;
   isRevealed: boolean;
   owner: Player | "NEUTRAL";
+  direction?: Direction; // 사냥꾼의 방향
 }
 
 export interface GameState {
@@ -41,5 +45,6 @@ export const CAPTURE_SCORES: Record<TileType, number> = {
   PHEASANT: 3, // 여우/곰이 꿩 포획
   TREE: 2, // 나무꾼이 나무 제거
   LUMBERJACK: 0, // 포획 점수 없음
+  CABIN: 0, // 포획 불가
   EMPTY: 0, // 포획 점수 없음
 };

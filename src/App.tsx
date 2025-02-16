@@ -6,6 +6,7 @@ import {
   Player,
   Position,
   CAPTURE_SCORES,
+  Direction,
 } from "./types/game";
 import "./App.css";
 
@@ -38,7 +39,7 @@ const createInitialBoard = (): Tile[][] => {
         j === Math.floor(BOARD_SIZE / 2)
       ) {
         row.push({
-          type: "EMPTY" as TileType,
+          type: "CABIN" as TileType,
           isRevealed: true,
           owner: "NEUTRAL",
         });
@@ -53,6 +54,7 @@ const createInitialBoard = (): Tile[][] => {
               : type === "FOX" || type === "BEAR"
               ? "P2"
               : "NEUTRAL",
+          direction: type === "HUNTER" ? getRandomDirection() : undefined,
         });
         tileIndex++;
       }
@@ -76,7 +78,7 @@ function isValidMove(
   if (!fromTile.isRevealed || !toTile.isRevealed) return false;
 
   // 이동 불가능한 타일 체크
-  if (["TREE", "EMPTY"].includes(fromTile.type)) {
+  if (["TREE", "EMPTY", "CABIN"].includes(fromTile.type)) {
     return false;
   }
 
@@ -91,8 +93,13 @@ function isValidMove(
     return false;
   }
 
+  // 목적지가 오두막인 경우 이동 불가
+  if (toTile.type === "CABIN") {
+    return false;
+  }
+
   // 목적지가 비어있거나 포획할 수 있는 경우만 이동 가능
-  if (toTile.type !== "EMPTY" && !canCapture(fromTile, toTile)) {
+  if (toTile.type !== "EMPTY" && !canCapture(fromTile, toTile, from, to)) {
     return false;
   }
 
@@ -140,18 +147,43 @@ function isValidMove(
   return false;
 }
 
-function canCapture(attacker: Tile, target: Tile): boolean {
+function canCapture(
+  attacker: Tile,
+  target: Tile,
+  from: Position,
+  to: Position
+): boolean {
   if (!target.isRevealed) return false;
 
   switch (attacker.type) {
-    case "HUNTER":
-      return ["FOX", "BEAR", "DUCK", "PHEASANT"].includes(target.type);
+    case "HUNTER": {
+      if (!attacker.direction) return false;
+      if (!["FOX", "BEAR", "DUCK", "PHEASANT"].includes(target.type))
+        return false;
+
+      // 사냥꾼의 방향과 타겟의 위치가 일치하는지 확인
+      const rowDiff = to.row - from.row;
+      const colDiff = to.col - from.col;
+
+      switch (attacker.direction) {
+        case "UP":
+          return rowDiff < 0 && colDiff === 0;
+        case "DOWN":
+          return rowDiff > 0 && colDiff === 0;
+        case "LEFT":
+          return colDiff < 0 && rowDiff === 0;
+        case "RIGHT":
+          return colDiff > 0 && rowDiff === 0;
+        default:
+          return false;
+      }
+    }
     case "LUMBERJACK":
       return target.type === "TREE";
     case "FOX":
       return ["DUCK", "PHEASANT"].includes(target.type);
     case "BEAR":
-      return target.type === "HUNTER";
+      return target.type === "HUNTER" || target.type === "LUMBERJACK";
     default:
       return false;
   }
@@ -226,7 +258,7 @@ function App() {
 
       // 포획 처리
       const newScores = { ...gameState.scores };
-      if (canCapture(movingTile, targetTile)) {
+      if (canCapture(movingTile, targetTile, from, to)) {
         const score = CAPTURE_SCORES[targetTile.type];
         newScores[gameState.currentPlayer] += score;
 
@@ -353,7 +385,7 @@ function App() {
               )
             }
           >
-            {tile.isRevealed ? getTileSymbol(tile.type) : "?"}
+            {tile.isRevealed ? getTileSymbol(tile) : "?"}
           </div>
         ))}
       </div>
@@ -361,10 +393,22 @@ function App() {
   );
 }
 
-function getTileSymbol(type: TileType): string {
-  switch (type) {
+function getTileSymbol(tile: Tile): string {
+  switch (tile.type) {
     case "HUNTER":
-      return "🏹";
+      // 방향에 따른 화살표 추가
+      switch (tile.direction) {
+        case "UP":
+          return "🏹⬆️";
+        case "DOWN":
+          return "🏹⬇️";
+        case "LEFT":
+          return "🏹⬅️";
+        case "RIGHT":
+          return "🏹➡️";
+        default:
+          return "🏹";
+      }
     case "LUMBERJACK":
       return "👨‍🌾";
     case "FOX":
@@ -377,9 +421,16 @@ function getTileSymbol(type: TileType): string {
       return "🐔";
     case "TREE":
       return "🌲";
+    case "CABIN":
+      return "🏠";
     case "EMPTY":
       return " ";
   }
+}
+
+function getRandomDirection(): Direction {
+  const directions: Direction[] = ["UP", "DOWN", "LEFT", "RIGHT"];
+  return directions[Math.floor(Math.random() * directions.length)];
 }
 
 export default App;
