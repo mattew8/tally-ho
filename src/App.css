@@ -1,0 +1,46 @@
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+
+.game-info {
+  margin-bottom: 20px;
+  font-size: 1.2em;
+}
+
+.game-board {
+  display: grid;
+  grid-template-columns: repeat(7, 60px); /* 7개의 60px 컬럼 */
+  grid-template-rows: repeat(7, 60px); /* 7개의 60px 로우 */
+  gap: 2px;
+  background-color: #ccc;
+  padding: 2px;
+}
+
+.tile {
+  width: 60px;
+  height: 60px;
+  background-color: #f0f0f0;
+  border: 1px solid #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8em;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.tile:hover {
+  background-color: #e0e0e0;
+}
+
+.tile.revealed {
+  background-color: #fff;
+}
+
+.tile.revealed[data-type="EMPTY"] {
+  background-color: #ddd;
+  cursor: default;
+}
