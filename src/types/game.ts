@@ -9,6 +9,7 @@ export type TileType =
   | "PHEASANT" // 꿩
   | "TREE" // 나무
   | "CABIN" // 오두막
+  | "EXIT" // 탈출구
   | "EMPTY"; // 빈 칸
 
 export type Direction = "UP" | "DOWN" | "LEFT" | "RIGHT";
@@ -34,6 +35,12 @@ export interface GameState {
   };
   selectedTile: Position | null;
   gameOver: boolean;
+  finalPhase: boolean; // 마지막 단계 여부
+  remainingMoves: {
+    // 각 플레이어의 남은 이동 횟수
+    P1: number;
+    P2: number;
+  };
 }
 
 // 각 타일 타입별 점수
@@ -47,4 +54,13 @@ export const CAPTURE_SCORES: Record<TileType, number> = {
   LUMBERJACK: 0, // 포획 점수 없음
   CABIN: 0, // 포획 불가
   EMPTY: 0, // 포획 점수 없음
+  EXIT: 0, // 포획 점수 없음
+};
+
+// 탈출 시 얻는 점수
+export const ESCAPE_SCORES: Partial<Record<TileType, number>> = {
+  HUNTER: 5,
+  LUMBERJACK: 5,
+  FOX: 5,
+  BEAR: 10,
 };

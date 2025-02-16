@@ -12,8 +12,8 @@
 
 .game-board {
   display: grid;
-  grid-template-columns: repeat(7, 60px); /* 7개의 60px 컬럼 */
-  grid-template-rows: repeat(7, 60px); /* 7개의 60px 로우 */
+  grid-template-columns: repeat(9, 60px); /* 9개의 60px 컬럼 */
+  grid-template-rows: repeat(9, 60px); /* 9개의 60px 로우 */
   gap: 2px;
   background-color: #ccc;
   padding: 2px;
@@ -55,4 +55,25 @@
   font-size: 1.5em;
   font-weight: bold;
   color: #d32f2f;
+}
+
+.final-phase {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+  color: #856404;
+}
+
+/* 게임 영역 외부의 타일 스타일 */
+.tile[data-outside="true"] {
+  background-color: transparent;
+  border: none;
+  cursor: default;
+}
+
+.tile[data-type="EXIT"] {
+  background-color: #ffd700;
+  cursor: pointer;
 }
