@@ -1,62 +1,266 @@
+/* 전체 게임 컨테이너 */
 .game-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 20px;
+  background-color: #3e2f1d; /* 전체 배경을 나무 느낌으로 변경 */
+  min-height: 100vh;
+  box-sizing: border-box; /* padding이 height에 포함되도록 설정 */
+  margin: 0; /* 혹시 모를 마진 제거 */
+  overflow: hidden; /* 내용이 넘치면 숨김 */
 }
 
+/* body와 html에 대한 스타일도 추가 */
+body,
+html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden; /* 전체 페이지의 스크롤도 방지 */
+}
+
+/* 게임 정보 */
 .game-info {
   margin-bottom: 20px;
   font-size: 1.2em;
+  color: #fff;
+  background-color: #5a3e2b;
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 3px 5px rgba(0, 0, 0, 0.3);
+  min-height: 150px;
+  width: 100%;
+  max-width: 600px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
+/* 게임 보드 */
 .game-board {
   display: grid;
-  grid-template-columns: repeat(9, 60px); /* 9개의 60px 컬럼 */
-  grid-template-rows: repeat(9, 60px); /* 9개의 60px 로우 */
+  grid-template-columns: repeat(9, 70px);
+  grid-template-rows: repeat(9, 70px);
   gap: 2px;
-  background-color: #ccc;
-  padding: 2px;
+  background-color: #4d3826;
+  padding: 5px;
+  border-radius: 8px;
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+  transition: transform 0.5s ease-in-out;
+  transform: translateY(0);
 }
 
+/* 마지막 단계에서 게임판 위치 조정 */
+.final-phase .game-board {
+  transform: translateY(30px); /* 또는 필요한 만큼의 픽셀 값 조정 */
+}
+
+/* 기본 타일 스타일 */
 .tile {
-  width: 60px;
-  height: 60px;
-  background-color: #f0f0f0;
-  border: 1px solid #999;
+  width: 70px;
+  height: 70px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.8em;
+  font-size: 2em;
+  font-weight: bold;
   cursor: pointer;
-  transition: background-color 0.3s;
+  border-radius: 5px;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.2);
+  transition: transform 0.1s ease-in-out, background-color 0.3s;
+  position: relative; /* 가상 요소를 위한 position 설정 */
 }
 
-.tile:hover {
-  background-color: #e0e0e0;
+/* 게임 영역 안의 기본 타일 */
+.tile[data-outside="false"] {
+  background-color: #8fbc8f; /* 초원 느낌의 녹색 */
+  border: 1px solid #6b8e23;
 }
 
+/* 게임 영역 밖(탈출구 포함) 타일 */
+.tile[data-outside="true"] {
+  background-color: #6b4f37; /* 진한 갈색 (게임 바깥 영역) */
+  border: 1px solid #4d3826;
+  cursor: default;
+}
+
+/* 엎어진(비공개) 타일: 모든 비공개 타일 동일한 색 */
+.tile:not(.revealed) {
+  background-color: #8b7355 !important; /* 더 밝은 갈색으로 변경 */
+  border: 1px solid #3e2f1d;
+  cursor: pointer;
+}
+
+/* 타일 공개되었을 때 */
 .tile.revealed {
   background-color: #fff;
 }
 
-.tile.revealed[data-type="EMPTY"] {
-  background-color: #ddd;
+/* 타일 선택 효과 */
+.tile.selected {
+  border: 3px solid #ffcc00;
+  box-shadow: 0 0 8px rgba(255, 204, 0, 0.8);
+  transform: scale(1.1);
+}
+
+/* 선택 불가능한 타일 스타일 */
+.tile[data-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.5;
+  filter: grayscale(50%);
+}
+
+/* 사냥 가능한 타일 스타일 */
+.tile[data-huntable="true"] {
+  cursor: crosshair;
+  opacity: 1 !important;
+  filter: none !important;
+  position: relative;
+}
+
+/* 사냥 가능한 타일 호버 효과 */
+.tile[data-huntable="true"]:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(255, 0, 0, 0.4);
+  border: 2px solid #ff4444;
+}
+
+/* 사냥 가능한 타일 표시 */
+.tile[data-huntable="true"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px solid rgba(255, 0, 0, 0.3);
+  border-radius: 4px;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+}
+
+/* 사냥 가능한 타일 호버 시 툴팁 */
+.tile[data-huntable="true"]:hover::after {
+  content: "hunt!";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(255, 0, 0, 0.8);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  white-space: nowrap;
+  z-index: 1000;
+}
+
+/* 특정 타일 타입에 따른 스타일 */
+
+/* 사냥꾼 */
+.tile[data-type="HUNTER"] {
+  background-color: #b22222; /* 짙은 붉은색 */
+  color: white;
+}
+
+/* 나무꾼 */
+.tile[data-type="LUMBERJACK"] {
+  background-color: #8b4513; /* 갈색 */
+  color: white;
+}
+
+/* 여우 */
+.tile[data-type="FOX"] {
+  background-color: #ff8c00; /* 주황색 */
+  color: white;
+}
+
+/* 곰 */
+.tile[data-type="BEAR"] {
+  background-color: #4a2700; /* 더 어두운 갈색으로 변경 */
+  color: white;
+}
+
+/* 오리 */
+.tile[data-type="DUCK"] {
+  background-color: #ffeb3b; /* 노란색 */
+  color: black;
+}
+
+/* 꿩 */
+.tile[data-type="PHEASANT"] {
+  background-color: #d2691e; /* 다크 오렌지 */
+  color: white;
+}
+
+/* 나무 */
+.tile[data-type="TREE"] {
+  background-color: #228b22; /* 짙은 초록색 */
+  color: white;
+}
+
+/* 오두막 */
+.tile[data-type="CABIN"] {
+  background-color: #8b5a2b; /* 나무 색 */
+  color: white;
+}
+
+/* 탈출구 */
+.tile[data-type="EXIT"] {
+  background-color: #ffd700;
+  border: 2px solid #ffcc00;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.8);
+  font-weight: bold;
+  opacity: 0; /* 처음에는 보이지 않음 */
+  transform: scale(0); /* 처음에는 크기가 0 */
+  transition: opacity 1s ease-in-out, transform 1s ease-in-out;
+}
+
+/* 마지막 페이즈에서 탈출구 표시 */
+.final-phase .tile[data-type="EXIT"] {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* 탈출구 라인의 타일들 (탈출구 제외) */
+.tile[data-exit-line="true"] {
+  background-color: #6b4f37 !important; /* 게임 영역 밖과 동일한 색상 */
+  border: 1px solid #4d3826;
   cursor: default;
 }
 
-.tile.selected {
-  border: 2px solid #007bff;
-  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+/* 빈 공간 */
+.tile[data-type="EMPTY"] {
+  background-color: #c0c0c0;
+  cursor: default;
 }
 
+/* 게임 종료 메시지 */
 .game-over {
   margin-top: 10px;
   font-size: 1.5em;
   font-weight: bold;
-  color: #d32f2f;
+  color: #ff4444;
+  text-shadow: 1px 1px 2px black;
 }
 
+/* 마지막 단계 안내 */
 .final-phase {
   margin-top: 10px;
   padding: 10px;
@@ -64,16 +268,120 @@
   border: 1px solid #ffeeba;
   border-radius: 4px;
   color: #856404;
+  font-weight: bold;
+  transition: all 0.3s ease; /* 부드러운 전환 효과 */
 }
 
-/* 게임 영역 외부의 타일 스타일 */
-.tile[data-outside="true"] {
-  background-color: transparent;
-  border: none;
-  cursor: default;
-}
-
-.tile[data-type="EXIT"] {
-  background-color: #ffd700;
+/* 이동 가능한 빈 타일 스타일 */
+.tile[data-movable="true"] {
   cursor: pointer;
+  opacity: 1 !important;
+  filter: none !important;
+  position: relative;
+}
+
+/* 이동 가능한 빈 타일 호버 효과 */
+.tile[data-movable="true"]:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.4);
+  border: 2px solid #44ff44;
+}
+
+/* 이동 가능한 빈 타일 표시 */
+.tile[data-movable="true"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px solid rgba(0, 255, 0, 0.3);
+  border-radius: 4px;
+  animation: pulse 1.5s infinite;
+}
+
+/* 이동 가능한 빈 타일 호버 시 툴팁 */
+.tile[data-movable="true"]:hover::after {
+  content: "move!";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 255, 0, 0.8);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  white-space: nowrap;
+  z-index: 1000;
+}
+
+/* 탈출 가능한 타일 스타일 */
+.tile[data-escapable="true"] {
+  cursor: pointer;
+  opacity: 1 !important;
+  filter: none !important;
+  position: relative;
+}
+
+/* 탈출 가능한 타일 호버 효과 */
+.tile[data-escapable="true"]:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+  border: 2px solid #ffd700;
+}
+
+/* 탈출 가능한 타일 표시 */
+.tile[data-escapable="true"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px solid rgba(255, 215, 0, 0.4);
+  border-radius: 4px;
+  animation: pulse 1.5s infinite;
+}
+
+/* 탈출 가능한 타일 호버 시 툴팁 */
+.tile[data-escapable="true"]:hover::after {
+  content: "escape!";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(255, 215, 0, 0.9);
+  color: black;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  white-space: nowrap;
+  z-index: 1000;
+}
+
+/* 마지막 단계 안내 */
+.final-phase-message {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+  color: #856404;
+  font-weight: bold;
+  visibility: hidden; /* 처음에는 보이지 않지만 공간은 차지 */
+  opacity: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  transition: opacity 0.5s ease-in-out;
+}
+
+/* 마지막 단계일 때 메시지 표시 */
+.final-phase .final-phase-message {
+  visibility: visible;
+  opacity: 1;
+  height: auto;
+  margin-top: 10px;
+  padding: 10px;
 }
