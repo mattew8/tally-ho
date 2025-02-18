@@ -10,6 +10,7 @@ import {
   ESCAPE_SCORES,
 } from "./types/game";
 import "./App.css";
+import { RulesModal } from "./components/RulesModal";
 
 const BOARD_SIZE = 9; // 전체 보드 크기
 const GAME_AREA_START = 1; // 실제 게임 영역 시작 위치
@@ -247,6 +248,19 @@ function canCapture(
 }
 
 function App() {
+  const [showRules, setShowRules] = useState(() => {
+    // localStorage에서 설명서 확인 여부를 가져옴
+    const hasSeenRules = localStorage.getItem("hasSeenRules");
+    // 설명서를 본 적이 없으면 true, 있으면 false 반환
+    return !hasSeenRules;
+  });
+
+  const handleCloseRules = () => {
+    // 설명서를 봤다는 정보를 localStorage에 저장
+    localStorage.setItem("hasSeenRules", "true");
+    setShowRules(false);
+  };
+
   const [gameState, setGameState] = useState<GameState>({
     board: createInitialBoard(),
     currentPlayer: "P1",
@@ -400,134 +414,146 @@ function App() {
   };
 
   return (
-    <div
-      className={`game-container ${gameState.finalPhase ? "final-phase" : ""}`}
-    >
-      <div className="game-info">
-        <div>
-          현재 차례: {gameState.currentPlayer === "P1" ? "인간팀" : "동물팀"}
-        </div>
-        <div>
-          점수 - 인간팀: {gameState.scores.P1} | 동물팀: {gameState.scores.P2}
-        </div>
-        <div className="turn-info">
-          행동을 선택하세요:
-          <br />
-          1. 타일 열기 (뒤집힌 타일 클릭)
-          <br />
-          2. 타일 이동하기 (공개된 타일 선택 후 목적지 클릭)
-        </div>
-        {gameState.gameOver && (
-          <div className="game-over">
-            게임 종료! 승자:{" "}
-            {gameState.scores.P1 > gameState.scores.P2
-              ? "인간팀"
-              : gameState.scores.P1 < gameState.scores.P2
-              ? "동물팀"
-              : "무승부"}
+    <>
+      {showRules && <RulesModal onClose={handleCloseRules} />}
+      <div
+        className={`game-container ${
+          gameState.finalPhase ? "final-phase" : ""
+        }`}
+      >
+        <div className="game-info">
+          <div>
+            현재 차례: {gameState.currentPlayer === "P1" ? "인간팀" : "동물팀"}
           </div>
-        )}
-        {gameState.finalPhase && (
-          <div className="final-phase-message">
-            마지막 단계: 탈출 가능!
+          <div>
+            점수 - 인간팀: {gameState.scores.P1} | 동물팀: {gameState.scores.P2}
+          </div>
+          <div className="turn-info">
+            행동을 선택하세요:
             <br />
-            남은 이동 횟수 - 인간팀: {gameState.remainingMoves.P1} | 동물팀:{" "}
-            {gameState.remainingMoves.P2}
+            1. 타일 열기 (뒤집힌 타일 클릭)
+            <br />
+            2. 타일 이동하기 (공개된 타일 선택 후 목적지 클릭)
           </div>
-        )}
+          <button className="rules-button" onClick={() => setShowRules(true)}>
+            게임 설명서 보기
+          </button>
+          {gameState.gameOver && (
+            <div className="game-over">
+              게임 종료! 승자:{" "}
+              {gameState.scores.P1 > gameState.scores.P2
+                ? "인간팀"
+                : gameState.scores.P1 < gameState.scores.P2
+                ? "동물팀"
+                : "무승부"}
+            </div>
+          )}
+          {gameState.finalPhase && (
+            <div className="final-phase-message">
+              마지막 단계: 탈출 가능!
+              <br />
+              남은 이동 횟수 - 인간팀: {gameState.remainingMoves.P1} | 동물팀:{" "}
+              {gameState.remainingMoves.P2}
+            </div>
+          )}
+        </div>
+        <div className="game-board">
+          {gameState.board.map((row, i) =>
+            row.map((tile, j) => {
+              const isGameArea =
+                i >= GAME_AREA_START &&
+                i < GAME_AREA_START + GAME_AREA_SIZE &&
+                j >= GAME_AREA_START &&
+                j < GAME_AREA_START + GAME_AREA_SIZE;
+
+              // 탈출구 라인인지 확인
+              const isExitLine =
+                (i === 0 ||
+                  i === BOARD_SIZE - 1 ||
+                  j === 0 ||
+                  j === BOARD_SIZE - 1) &&
+                tile.type !== "EXIT";
+
+              // 사냥 가능 여부 확인
+              const isHuntable =
+                gameState.selectedTile &&
+                tile.isRevealed &&
+                canCapture(
+                  gameState.board[gameState.selectedTile.row][
+                    gameState.selectedTile.col
+                  ],
+                  tile,
+                  gameState.selectedTile,
+                  { row: i, col: j }
+                );
+
+              // 이동 가능 여부 확인
+              const isMovable =
+                gameState.selectedTile &&
+                tile.type === "EMPTY" &&
+                isValidMove(
+                  gameState.selectedTile,
+                  { row: i, col: j },
+                  gameState.board,
+                  gameState.currentPlayer,
+                  gameState
+                );
+
+              // 현재 플레이어가 선택할 수 없는 타일인지 확인
+              const isDisabled =
+                tile.isRevealed &&
+                !isHuntable &&
+                !isMovable &&
+                (isExitLine ||
+                  (gameState.currentPlayer === "P1" &&
+                    ["FOX", "BEAR", "TREE"].includes(tile.type)) ||
+                  (gameState.currentPlayer === "P2" &&
+                    ["HUNTER", "LUMBERJACK", "TREE"].includes(tile.type)) ||
+                  ["EMPTY", "CABIN"].includes(tile.type));
+
+              // 탈출 가능 여부 확인
+              const canEscape =
+                gameState.selectedTile &&
+                tile.type === "EXIT" &&
+                gameState.finalPhase &&
+                isValidMove(
+                  gameState.selectedTile,
+                  { row: i, col: j },
+                  gameState.board,
+                  gameState.currentPlayer,
+                  gameState
+                );
+
+              return (
+                <div
+                  key={`${i}-${j}`}
+                  className={`tile ${tile.isRevealed ? "revealed" : ""} ${
+                    gameState.selectedTile?.row === i &&
+                    gameState.selectedTile?.col === j
+                      ? "selected"
+                      : ""
+                  }`}
+                  data-type={tile.type}
+                  data-outside={!isGameArea && tile.type !== "EXIT"}
+                  data-exit-line={isExitLine}
+                  data-disabled={isDisabled}
+                  data-huntable={isHuntable}
+                  data-movable={isMovable}
+                  data-escapable={canEscape}
+                  onClick={() => handleTileClick(i, j)}
+                >
+                  {tile.isRevealed
+                    ? getTileSymbol(tile)
+                    : isGameArea
+                    ? "?"
+                    : ""}
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
-      <div className="game-board">
-        {gameState.board.map((row, i) =>
-          row.map((tile, j) => {
-            const isGameArea =
-              i >= GAME_AREA_START &&
-              i < GAME_AREA_START + GAME_AREA_SIZE &&
-              j >= GAME_AREA_START &&
-              j < GAME_AREA_START + GAME_AREA_SIZE;
-
-            // 탈출구 라인인지 확인
-            const isExitLine =
-              (i === 0 ||
-                i === BOARD_SIZE - 1 ||
-                j === 0 ||
-                j === BOARD_SIZE - 1) &&
-              tile.type !== "EXIT";
-
-            // 사냥 가능 여부 확인
-            const isHuntable =
-              gameState.selectedTile &&
-              tile.isRevealed &&
-              canCapture(
-                gameState.board[gameState.selectedTile.row][
-                  gameState.selectedTile.col
-                ],
-                tile,
-                gameState.selectedTile,
-                { row: i, col: j }
-              );
-
-            // 이동 가능 여부 확인
-            const isMovable =
-              gameState.selectedTile &&
-              tile.type === "EMPTY" &&
-              isValidMove(
-                gameState.selectedTile,
-                { row: i, col: j },
-                gameState.board,
-                gameState.currentPlayer,
-                gameState
-              );
-
-            // 현재 플레이어가 선택할 수 없는 타일인지 확인
-            const isDisabled =
-              tile.isRevealed &&
-              !isHuntable &&
-              !isMovable &&
-              (isExitLine ||
-                (gameState.currentPlayer === "P1" &&
-                  ["FOX", "BEAR", "TREE"].includes(tile.type)) ||
-                (gameState.currentPlayer === "P2" &&
-                  ["HUNTER", "LUMBERJACK", "TREE"].includes(tile.type)) ||
-                ["EMPTY", "CABIN"].includes(tile.type));
-
-            // 탈출 가능 여부 확인
-            const canEscape =
-              gameState.selectedTile &&
-              tile.type === "EXIT" &&
-              gameState.finalPhase &&
-              isValidMove(
-                gameState.selectedTile,
-                { row: i, col: j },
-                gameState.board,
-                gameState.currentPlayer,
-                gameState
-              );
-
-            return (
-              <div
-                key={`${i}-${j}`}
-                className={`tile ${tile.isRevealed ? "revealed" : ""} ${
-                  gameState.selectedTile?.row === i &&
-                  gameState.selectedTile?.col === j
-                    ? "selected"
-                    : ""
-                }`}
-                data-type={tile.type}
-                data-outside={!isGameArea && tile.type !== "EXIT"}
-                data-exit-line={isExitLine}
-                data-disabled={isDisabled}
-                data-huntable={isHuntable}
-                data-movable={isMovable}
-                data-escapable={canEscape}
-                onClick={() => handleTileClick(i, j)}
-              >
-                {tile.isRevealed ? getTileSymbol(tile) : isGameArea ? "?" : ""}
-              </div>
-            );
-          })
-        )}
-      </div>
-    </div>
+    </>
   );
 }
 
