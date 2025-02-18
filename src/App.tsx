@@ -474,10 +474,22 @@ function App() {
                   j === BOARD_SIZE - 1) &&
                 tile.type !== "EXIT";
 
+              // 이동 가능 여부 확인
+              const isMovable =
+                gameState.selectedTile &&
+                isValidMove(
+                  gameState.selectedTile,
+                  { row: i, col: j },
+                  gameState.board,
+                  gameState.currentPlayer,
+                  gameState
+                );
+
               // 사냥 가능 여부 확인
               const isHuntable =
                 gameState.selectedTile &&
                 tile.isRevealed &&
+                isMovable && // 이동 가능한 위치일 때만 사냥 가능
                 canCapture(
                   gameState.board[gameState.selectedTile.row][
                     gameState.selectedTile.col
@@ -485,18 +497,6 @@ function App() {
                   tile,
                   gameState.selectedTile,
                   { row: i, col: j }
-                );
-
-              // 이동 가능 여부 확인
-              const isMovable =
-                gameState.selectedTile &&
-                tile.type === "EMPTY" &&
-                isValidMove(
-                  gameState.selectedTile,
-                  { row: i, col: j },
-                  gameState.board,
-                  gameState.currentPlayer,
-                  gameState
                 );
 
               // 현재 플레이어가 선택할 수 없는 타일인지 확인
