@@ -186,7 +186,7 @@ html {
 /* 오리 */
 .tile[data-type="DUCK"] {
   background-color: #ffeb3b; /* 노란색 */
-  color: black;
+  color: white;
 }
 
 /* 꿩 */
