@@ -16,6 +16,14 @@ const BOARD_SIZE = 9; // 전체 보드 크기
 const GAME_AREA_START = 1; // 실제 게임 영역 시작 위치
 const GAME_AREA_SIZE = 7; // 실제 게임 영역 크기
 
+// 탈출구 설정
+const EXIT_LINES: Position[] = [
+  { row: 0, col: 4 }, // 상
+  { row: 8, col: 4 }, // 하
+  { row: 4, col: 0 }, // 좌
+  { row: 4, col: 8 }, // 우
+];
+
 const createInitialBoard = (): Tile[][] => {
   // 빈 9x9 보드 생성
   const board: Tile[][] = Array(BOARD_SIZE)
@@ -79,15 +87,7 @@ const createInitialBoard = (): Tile[][] => {
     }
   }
 
-  // 탈출구 설정
-  const exits: Position[] = [
-    { row: 0, col: 4 }, // 상
-    { row: 8, col: 4 }, // 하
-    { row: 4, col: 0 }, // 좌
-    { row: 4, col: 8 }, // 우
-  ];
-
-  exits.forEach(({ row, col }) => {
+  EXIT_LINES.forEach(({ row, col }) => {
     board[row][col] = {
       type: "EXIT",
       isRevealed: true,
@@ -282,8 +282,27 @@ function App() {
   }, [gameState.isAITurn, gameState.gameOver]);
 
   const handleAITurn = () => {
+    // 1. 사냥 가능한 타일 찾기
+    const bestAttack = findBestCaptureMove();
+    if (bestAttack) {
+      console.log("bestAttack", bestAttack);
+      handleMove(bestAttack.from, bestAttack.to);
+      return;
+    }
+
+    // 2. 탈출 가능한 타일 찾기
+    const bestEscape = findBestEscapeMove();
+    if (bestEscape) {
+      console.log("bestEscape", bestEscape);
+      handleMove(bestEscape.from, bestEscape.to);
+      return;
+    }
+
+    // 3. 뒤집을 수 있는 타일 찾기
     const unrevealedTiles = findUnrevealedTiles();
+
     if (unrevealedTiles.length > 0) {
+      console.log("unrevealedTiles", unrevealedTiles);
       const randomTile =
         unrevealedTiles[Math.floor(Math.random() * unrevealedTiles.length)];
       handleReveal(randomTile.row, randomTile.col);
@@ -294,18 +313,73 @@ function App() {
       return;
     }
 
+    // 4. 최적의 이동 수행
     const bestMove = findBestMove();
     if (bestMove) {
-      const { from, to } = bestMove;
-      setGameState((prev) => ({ ...prev, selectedTile: from }));
-      handleMove(to.row, to.col);
+      console.log("bestMove", bestMove);
+      handleMove(bestMove.from, bestMove.to);
       return;
     }
 
+    // 5. 이동 불가 -> 턴 종료
     setGameState((prev) => ({
       ...prev,
       isAITurn: false,
     }));
+  };
+
+  const findBestCaptureMove = (): { from: Position; to: Position } | null => {
+    let bestMove = null;
+    let bestScore = -Infinity;
+
+    // 전체 보드(9*9)를 순회
+    for (let i = 0; i < BOARD_SIZE; i++) {
+      for (let j = 0; j < BOARD_SIZE; j++) {
+        const tile = gameState.board[i][j];
+
+        if (tile.owner === "P2" && tile.isRevealed) {
+          for (let di = -BOARD_SIZE; di <= BOARD_SIZE; di++) {
+            for (let dj = -BOARD_SIZE; dj <= BOARD_SIZE; dj++) {
+              const newRow = i + di;
+              const newCol = j + dj;
+
+              // 게임판 범위를 벗어나는지 확인
+              if (
+                newRow < 0 ||
+                newRow >= BOARD_SIZE ||
+                newCol < 0 ||
+                newCol >= BOARD_SIZE
+              ) {
+                continue;
+              }
+
+              const to = { row: newRow, col: newCol };
+              const from = { row: i, col: j };
+
+              if (isValidMove(from, to, gameState.board, "P2", gameState)) {
+                const score =
+                  CAPTURE_SCORES[gameState.board[to.row][to.col].type] || 0;
+
+                const priorityScore =
+                  tile.type === "BEAR" &&
+                  gameState.board[to.row][to.col].type === "HUNTER"
+                    ? 100
+                    : score * 2;
+
+                if (priorityScore > bestScore) {
+                  bestScore = priorityScore;
+                  bestMove = {
+                    from: { row: i, col: j },
+                    to: { row: newRow, col: newCol },
+                  };
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    return bestMove;
   };
 
   const findUnrevealedTiles = (): Position[] => {
@@ -366,13 +440,43 @@ function App() {
     return score;
   };
 
+  const findBestEscapeMove = (): { from: Position; to: Position } | null => {
+    if (!gameState.finalPhase) return null; // 탈출은 마지막 단계에서만 가능
+
+    let bestMove = null;
+    let bestScore = -Infinity;
+
+    for (let i = GAME_AREA_START; i < GAME_AREA_START + GAME_AREA_SIZE; i++) {
+      for (let j = GAME_AREA_START; j < GAME_AREA_START + GAME_AREA_SIZE; j++) {
+        const tile = gameState.board[i][j];
+
+        if (tile.owner === "P2" && tile.isRevealed) {
+          for (const exit of EXIT_LINES) {
+            const from = { row: i, col: j };
+            const to = { row: exit.row, col: exit.col };
+
+            if (isValidMove(from, to, gameState.board, "P2", gameState)) {
+              const escapeScore = ESCAPE_SCORES[tile.type] || 0;
+
+              if (escapeScore > bestScore) {
+                bestScore = escapeScore;
+                bestMove = { from, to };
+              }
+            }
+          }
+        }
+      }
+    }
+    return bestMove;
+  };
+
   const handleTileClick = (row: number, col: number) => {
     if (gameState.gameOver || gameState.isAITurn) return;
 
     const tile = gameState.board[row][col];
 
     if (gameState.selectedTile) {
-      handleMove(row, col);
+      handleMove(gameState.selectedTile, { row, col });
       return;
     }
 
@@ -390,7 +494,6 @@ function App() {
     }
 
     handleReveal(row, col);
-
     setGameState((prev) => ({
       ...prev,
       isAITurn: true,
@@ -424,22 +527,30 @@ function App() {
       );
   };
 
-  const handleMove = (row: number, col: number) => {
-    if (!gameState.selectedTile) return;
-
-    const from = gameState.selectedTile;
-    const to = { row, col };
-
-    if (isValidMove(from, to, gameState.board, "P1", gameState)) {
+  const handleMove = (from: Position, to: Position) => {
+    if (
+      isValidMove(
+        from,
+        to,
+        gameState.board,
+        gameState.isAITurn ? "P2" : "P1",
+        gameState
+      )
+    ) {
       const newBoard = [...gameState.board];
       const movingTile = newBoard[from.row][from.col];
       const targetTile = newBoard[to.row][to.col];
 
       const newScores = { ...gameState.scores };
+      const currentPlayer = gameState.isAITurn ? "P2" : "P1";
 
       if (gameState.finalPhase && targetTile.type === "EXIT") {
-        if (["HUNTER", "LUMBERJACK"].includes(movingTile.type)) {
-          newScores.P1 += ESCAPE_SCORES[movingTile.type] || 0;
+        if (
+          (currentPlayer === "P1" &&
+            ["HUNTER", "LUMBERJACK"].includes(movingTile.type)) ||
+          (currentPlayer === "P2" && ["FOX", "BEAR"].includes(movingTile.type))
+        ) {
+          newScores[currentPlayer] += ESCAPE_SCORES[movingTile.type] || 0;
 
           newBoard[from.row][from.col] = {
             type: "EMPTY",
@@ -450,7 +561,7 @@ function App() {
       } else {
         if (canCapture(movingTile, targetTile, from, to)) {
           const score = CAPTURE_SCORES[targetTile.type];
-          newScores.P1 += score;
+          newScores[currentPlayer] += score;
         }
 
         newBoard[to.row][to.col] = movingTile;
@@ -463,10 +574,12 @@ function App() {
 
       const newRemainingMoves = { ...gameState.remainingMoves };
       if (gameState.finalPhase) {
-        newRemainingMoves.P1--;
+        newRemainingMoves[currentPlayer]--;
       }
 
-      const isGameOver = gameState.finalPhase && newRemainingMoves.P1 === 0;
+      const isGameOver =
+        gameState.finalPhase &&
+        (newRemainingMoves.P1 === 0 || newRemainingMoves.P2 === 0);
 
       setGameState((prev) => ({
         ...prev,
@@ -475,11 +588,7 @@ function App() {
         selectedTile: null,
         remainingMoves: newRemainingMoves,
         gameOver: isGameOver,
-      }));
-    } else {
-      setGameState((prev) => ({
-        ...prev,
-        selectedTile: null,
+        isAITurn: !isGameOver && !prev.isAITurn,
       }));
     }
   };
