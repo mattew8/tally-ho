@@ -28,19 +28,18 @@ export interface Tile {
 
 export interface GameState {
   board: Tile[][];
-  currentPlayer: Player;
   scores: {
     P1: number;
     P2: number;
   };
   selectedTile: Position | null;
   gameOver: boolean;
-  finalPhase: boolean; // 마지막 단계 여부
+  finalPhase: boolean;
   remainingMoves: {
-    // 각 플레이어의 남은 이동 횟수
     P1: number;
     P2: number;
   };
+  isAITurn: boolean;
 }
 
 // 각 타일 타입별 점수

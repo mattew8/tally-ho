@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   GameState,
   Tile,
@@ -263,30 +263,122 @@ function App() {
 
   const [gameState, setGameState] = useState<GameState>({
     board: createInitialBoard(),
-    currentPlayer: "P1",
     scores: { P1: 0, P2: 0 },
     selectedTile: null,
     gameOver: false,
     finalPhase: false,
     remainingMoves: { P1: 5, P2: 5 },
+    isAITurn: false,
   });
 
+  useEffect(() => {
+    if (gameState.isAITurn && !gameState.gameOver) {
+      const timer = setTimeout(() => {
+        handleAITurn();
+      }, 1000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [gameState.isAITurn, gameState.gameOver]);
+
+  const handleAITurn = () => {
+    const unrevealedTiles = findUnrevealedTiles();
+    if (unrevealedTiles.length > 0) {
+      const randomTile =
+        unrevealedTiles[Math.floor(Math.random() * unrevealedTiles.length)];
+      handleReveal(randomTile.row, randomTile.col);
+      setGameState((prev) => ({
+        ...prev,
+        isAITurn: false,
+      }));
+      return;
+    }
+
+    const bestMove = findBestMove();
+    if (bestMove) {
+      const { from, to } = bestMove;
+      setGameState((prev) => ({ ...prev, selectedTile: from }));
+      handleMove(to.row, to.col);
+      return;
+    }
+
+    setGameState((prev) => ({
+      ...prev,
+      isAITurn: false,
+    }));
+  };
+
+  const findUnrevealedTiles = (): Position[] => {
+    const tiles: Position[] = [];
+    for (let i = GAME_AREA_START; i < GAME_AREA_START + GAME_AREA_SIZE; i++) {
+      for (let j = GAME_AREA_START; j < GAME_AREA_START + GAME_AREA_SIZE; j++) {
+        if (!gameState.board[i][j].isRevealed) {
+          tiles.push({ row: i, col: j });
+        }
+      }
+    }
+    return tiles;
+  };
+
+  const findBestMove = (): { from: Position; to: Position } | null => {
+    let bestMove = null;
+    let bestScore = -Infinity;
+
+    for (let i = GAME_AREA_START; i < GAME_AREA_START + GAME_AREA_SIZE; i++) {
+      for (let j = GAME_AREA_START; j < GAME_AREA_START + GAME_AREA_SIZE; j++) {
+        const tile = gameState.board[i][j];
+        if (tile.owner === "P2" && tile.isRevealed) {
+          for (let di = -GAME_AREA_SIZE; di <= GAME_AREA_SIZE; di++) {
+            for (let dj = -GAME_AREA_SIZE; dj <= GAME_AREA_SIZE; dj++) {
+              const newRow = i + di;
+              const newCol = j + dj;
+              const to = { row: newRow, col: newCol };
+              const from = { row: i, col: j };
+
+              if (isValidMove(from, to, gameState.board, "P2", gameState)) {
+                const score = evaluateMove(from, to);
+                if (score > bestScore) {
+                  bestScore = score;
+                  bestMove = { from, to };
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    return bestMove;
+  };
+
+  const evaluateMove = (from: Position, to: Position): number => {
+    const fromTile = gameState.board[from.row][from.col];
+    const toTile = gameState.board[to.row][to.col];
+    let score = 0;
+
+    if (canCapture(fromTile, toTile, from, to)) {
+      score += CAPTURE_SCORES[toTile.type] * 2;
+    }
+
+    if (gameState.finalPhase && toTile.type === "EXIT") {
+      score += 1000;
+    }
+
+    return score;
+  };
+
   const handleTileClick = (row: number, col: number) => {
-    if (gameState.gameOver) return;
+    if (gameState.gameOver || gameState.isAITurn) return;
 
     const tile = gameState.board[row][col];
 
-    // 이동할 타일이 선택된 상태
     if (gameState.selectedTile) {
       handleMove(row, col);
       return;
     }
 
-    // 타일이 이미 공개된 경우: 이동을 위한 타일 선택
     if (tile.isRevealed) {
-      // 자신의 타일이거나 중립 타일(오리, 꿩)인 경우만 선택 가능
       if (
-        tile.owner === gameState.currentPlayer ||
+        tile.owner === "P1" ||
         (tile.owner === "NEUTRAL" && ["DUCK", "PHEASANT"].includes(tile.type))
       ) {
         setGameState((prev) => ({
@@ -297,8 +389,12 @@ function App() {
       return;
     }
 
-    // 타일이 공개되지 않은 경우: 타일 공개
     handleReveal(row, col);
+
+    setGameState((prev) => ({
+      ...prev,
+      isAITurn: true,
+    }));
   };
 
   const handleReveal = (row: number, col: number) => {
@@ -310,19 +406,15 @@ function App() {
       isRevealed: true,
     };
 
-    // 모든 타일이 공개되었는지 확인
     const shouldStartFinalPhase = checkAllTilesRevealed(newBoard);
 
-    // 타일을 열면 바로 턴 종료
     setGameState((prev) => ({
       ...prev,
       board: newBoard,
-      currentPlayer: prev.currentPlayer === "P1" ? "P2" : "P1",
-      finalPhase: shouldStartFinalPhase, // 마지막 타일이 열리면 바로 마지막 단계 시작
+      finalPhase: shouldStartFinalPhase,
     }));
   };
 
-  // 모든 타일이 공개되었는지 확인하는 함수
   const checkAllTilesRevealed = (board: Tile[][]): boolean => {
     return board
       .flat()
@@ -338,28 +430,17 @@ function App() {
     const from = gameState.selectedTile;
     const to = { row, col };
 
-    if (
-      isValidMove(from, to, gameState.board, gameState.currentPlayer, gameState)
-    ) {
+    if (isValidMove(from, to, gameState.board, "P1", gameState)) {
       const newBoard = [...gameState.board];
       const movingTile = newBoard[from.row][from.col];
       const targetTile = newBoard[to.row][to.col];
 
       const newScores = { ...gameState.scores };
 
-      // 탈출 처리
       if (gameState.finalPhase && targetTile.type === "EXIT") {
-        if (
-          (gameState.currentPlayer === "P1" &&
-            ["HUNTER", "LUMBERJACK"].includes(movingTile.type)) ||
-          (gameState.currentPlayer === "P2" &&
-            ["FOX", "BEAR"].includes(movingTile.type))
-        ) {
-          // 탈출 점수 추가
-          newScores[gameState.currentPlayer] +=
-            ESCAPE_SCORES[movingTile.type] || 0;
+        if (["HUNTER", "LUMBERJACK"].includes(movingTile.type)) {
+          newScores.P1 += ESCAPE_SCORES[movingTile.type] || 0;
 
-          // 탈출한 타일은 제거만 하고, 탈출구로는 이동하지 않음
           newBoard[from.row][from.col] = {
             type: "EMPTY",
             isRevealed: true,
@@ -367,14 +448,11 @@ function App() {
           };
         }
       } else {
-        // 일반 이동 또는 포획
         if (canCapture(movingTile, targetTile, from, to)) {
-          // 포획 점수 추가
           const score = CAPTURE_SCORES[targetTile.type];
-          newScores[gameState.currentPlayer] += score;
+          newScores.P1 += score;
         }
 
-        // 이동 처리
         newBoard[to.row][to.col] = movingTile;
         newBoard[from.row][from.col] = {
           type: "EMPTY",
@@ -383,29 +461,22 @@ function App() {
         };
       }
 
-      // 남은 이동 횟수 감소 (마지막 단계에서만)
       const newRemainingMoves = { ...gameState.remainingMoves };
       if (gameState.finalPhase) {
-        newRemainingMoves[gameState.currentPlayer]--;
+        newRemainingMoves.P1--;
       }
 
-      // 게임 종료 조건 체크
-      const isGameOver =
-        gameState.finalPhase &&
-        newRemainingMoves.P1 === 0 &&
-        newRemainingMoves.P2 === 0;
+      const isGameOver = gameState.finalPhase && newRemainingMoves.P1 === 0;
 
       setGameState((prev) => ({
         ...prev,
         board: newBoard,
         scores: newScores,
         selectedTile: null,
-        currentPlayer: prev.currentPlayer === "P1" ? "P2" : "P1",
         remainingMoves: newRemainingMoves,
         gameOver: isGameOver,
       }));
     } else {
-      // 잘못된 이동이면 선택 취소
       setGameState((prev) => ({
         ...prev,
         selectedTile: null,
@@ -423,7 +494,8 @@ function App() {
       >
         <div className="game-info">
           <div>
-            현재 차례: {gameState.currentPlayer === "P1" ? "인간팀" : "동물팀"}
+            현재 차례:{" "}
+            {gameState.isAITurn ? "AI (동물팀)" : "플레이어 (인간팀)"}
           </div>
           <div>
             점수 - 인간팀: {gameState.scores.P1} | 동물팀: {gameState.scores.P2}
@@ -466,7 +538,6 @@ function App() {
                 j >= GAME_AREA_START &&
                 j < GAME_AREA_START + GAME_AREA_SIZE;
 
-              // 탈출구 라인인지 확인
               const isExitLine =
                 (i === 0 ||
                   i === BOARD_SIZE - 1 ||
@@ -474,22 +545,20 @@ function App() {
                   j === BOARD_SIZE - 1) &&
                 tile.type !== "EXIT";
 
-              // 이동 가능 여부 확인
               const isMovable =
                 gameState.selectedTile &&
                 isValidMove(
                   gameState.selectedTile,
                   { row: i, col: j },
                   gameState.board,
-                  gameState.currentPlayer,
+                  "P1",
                   gameState
                 );
 
-              // 사냥 가능 여부 확인
               const isHuntable =
                 gameState.selectedTile &&
                 tile.isRevealed &&
-                isMovable && // 이동 가능한 위치일 때만 사냥 가능
+                isMovable &&
                 canCapture(
                   gameState.board[gameState.selectedTile.row][
                     gameState.selectedTile.col
@@ -499,19 +568,15 @@ function App() {
                   { row: i, col: j }
                 );
 
-              // 현재 플레이어가 선택할 수 없는 타일인지 확인
               const isDisabled =
                 tile.isRevealed &&
                 !isHuntable &&
                 !isMovable &&
                 (isExitLine ||
-                  (gameState.currentPlayer === "P1" &&
+                  (gameState.isAITurn &&
                     ["FOX", "BEAR", "TREE"].includes(tile.type)) ||
-                  (gameState.currentPlayer === "P2" &&
-                    ["HUNTER", "LUMBERJACK", "TREE"].includes(tile.type)) ||
                   ["EMPTY", "CABIN"].includes(tile.type));
 
-              // 탈출 가능 여부 확인
               const canEscape =
                 gameState.selectedTile &&
                 tile.type === "EXIT" &&
@@ -520,7 +585,7 @@ function App() {
                   gameState.selectedTile,
                   { row: i, col: j },
                   gameState.board,
-                  gameState.currentPlayer,
+                  "P1",
                   gameState
                 );
 
@@ -560,7 +625,6 @@ function App() {
 function getTileSymbol(tile: Tile): string {
   switch (tile.type) {
     case "HUNTER":
-      // 방향에 따른 화살표 추가
       switch (tile.direction) {
         case "UP":
           return "🏹⬆️";
