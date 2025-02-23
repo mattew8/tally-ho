@@ -268,6 +268,7 @@ function App() {
     finalPhase: false,
     remainingMoves: { HUMANS: 5, ANIMALS: 5 },
     isAITurn: true,
+    logs: [],
   });
 
   useEffect(() => {
@@ -662,18 +663,25 @@ function App() {
     if (gameState.board[row][col].isRevealed) return;
 
     const newBoard = [...gameState.board];
+    const tile = newBoard[row][col];
     newBoard[row][col] = {
-      ...newBoard[row][col],
+      ...tile,
       isRevealed: true,
     };
 
     const shouldStartFinalPhase = checkAllTilesRevealed(newBoard);
+
+    // 로그 메시지 생성
+    const logMessage = `${
+      gameState.isAITurn ? "AI" : "플레이어"
+    }가 ${getTileKoreanName(tile.type)} 타일을 열었습니다.`;
 
     setGameState((prev) => ({
       ...prev,
       board: newBoard,
       finalPhase: shouldStartFinalPhase,
       isAITurn: true,
+      logs: [logMessage, ...prev.logs].slice(0, 10), // 최근 10개의 로그만 유지
     }));
   };
 
@@ -700,8 +708,17 @@ function App() {
       const movingTile = newBoard[from.row][from.col];
       const targetTile = newBoard[to.row][to.col];
 
+      // 타일 이동 로직 추가
+      newBoard[to.row][to.col] = movingTile;
+      newBoard[from.row][from.col] = {
+        type: "EMPTY",
+        isRevealed: true,
+        owner: "NEUTRAL",
+      };
+
       const newScores = { ...gameState.scores };
       const currentTeam = gameState.isAITurn ? "ANIMALS" : "HUMANS";
+      let logMessage = "";
 
       if (gameState.finalPhase && targetTile.type === "EXIT") {
         if (
@@ -711,25 +728,24 @@ function App() {
             ["FOX", "BEAR"].includes(movingTile.type))
         ) {
           newScores[currentTeam] += ESCAPE_SCORES[movingTile.type] || 0;
-
-          newBoard[from.row][from.col] = {
-            type: "EMPTY",
-            isRevealed: true,
-            owner: "NEUTRAL",
-          };
+          logMessage = `${
+            gameState.isAITurn ? "AI" : "플레이어"
+          }의 ${getTileKoreanName(movingTile.type)}이(가) 탈출했습니다!`;
         }
       } else {
         if (canCapture(movingTile, targetTile, from, to)) {
           const score = CAPTURE_SCORES[targetTile.type];
           newScores[currentTeam] += score;
+          logMessage = `${
+            gameState.isAITurn ? "AI" : "플레이어"
+          }의 ${getTileKoreanName(movingTile.type)}이(가) ${getTileKoreanName(
+            targetTile.type
+          )}을(를) 잡았습니다!`;
+        } else {
+          logMessage = `${
+            gameState.isAITurn ? "AI" : "플레이어"
+          }의 ${getTileKoreanName(movingTile.type)}이(가) 이동했습니다.`;
         }
-
-        newBoard[to.row][to.col] = movingTile;
-        newBoard[from.row][from.col] = {
-          type: "EMPTY",
-          isRevealed: true,
-          owner: "NEUTRAL",
-        };
       }
 
       const newRemainingMoves = { ...gameState.remainingMoves };
@@ -737,7 +753,6 @@ function App() {
         newRemainingMoves[currentTeam]--;
       }
 
-      // 두 플레이어 모두 이동 횟수를 소진했을 때 게임 종료
       const isGameOver =
         gameState.finalPhase &&
         newRemainingMoves.HUMANS === 0 &&
@@ -751,7 +766,34 @@ function App() {
         remainingMoves: newRemainingMoves,
         gameOver: isGameOver,
         isAITurn: !isGameOver && !prev.isAITurn,
+        logs: [logMessage, ...prev.logs].slice(0, 10),
       }));
+    }
+  };
+
+  // 타일 한글 이름 변환 함수 추가
+  const getTileKoreanName = (type: TileType): string => {
+    switch (type) {
+      case "HUNTER":
+        return "사냥꾼";
+      case "LUMBERJACK":
+        return "나무꾼";
+      case "FOX":
+        return "여우";
+      case "BEAR":
+        return "곰";
+      case "DUCK":
+        return "오리";
+      case "PHEASANT":
+        return "꿩";
+      case "TREE":
+        return "나무";
+      case "CABIN":
+        return "오두막";
+      case "EXIT":
+        return "출구";
+      case "EMPTY":
+        return "빈 칸";
     }
   };
 
@@ -801,6 +843,16 @@ function App() {
               동물팀: {gameState.remainingMoves.ANIMALS}
             </div>
           )}
+
+          {/* 로그 표시 영역 추가 */}
+          <div className="game-logs">
+            <h3>게임 로그</h3>
+            <ul>
+              {gameState.logs.map((log, index) => (
+                <li key={index}>{log}</li>
+              ))}
+            </ul>
+          </div>
         </div>
         <div className="game-board">
           {gameState.board.map((row, i) =>

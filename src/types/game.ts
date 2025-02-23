@@ -40,6 +40,7 @@ export interface GameState {
     ANIMALS: number;
   };
   isAITurn: boolean;
+  logs: string[];
 }
 
 // 각 타일 타입별 점수

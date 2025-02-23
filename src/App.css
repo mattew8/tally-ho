@@ -439,3 +439,36 @@ html {
 .game-container[data-ai-turn="true"] .tile {
   cursor: wait !important;
 }
+
+.game-logs {
+  margin-top: 20px;
+  padding: 10px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  height: 80px; /* 약 3줄 높이로 고정 */
+  overflow-y: auto;
+}
+
+.game-logs h3 {
+  margin: 0 0 5px 0;
+  color: #333;
+  font-size: 0.9em;
+}
+
+.game-logs ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.game-logs li {
+  padding: 3px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 0.85em;
+  color: #666;
+  line-height: 1.4;
+}
+
+.game-logs li:last-child {
+  border-bottom: none;
+}
