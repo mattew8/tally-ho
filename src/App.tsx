@@ -332,7 +332,7 @@ function App() {
     let bestMove = null;
     let bestScore = -Infinity;
 
-    // 전체 보드(9*9)를 순회
+    // 전체 보드를 순회하면서 포획 가능한 타일 찾기
     for (let i = 0; i < BOARD_SIZE; i++) {
       for (let j = 0; j < BOARD_SIZE; j++) {
         const tile = gameState.board[i][j];
@@ -343,7 +343,6 @@ function App() {
               const newRow = i + di;
               const newCol = j + dj;
 
-              // 게임판 범위를 벗어나는지 확인
               if (
                 newRow < 0 ||
                 newRow >= BOARD_SIZE ||
@@ -355,23 +354,26 @@ function App() {
 
               const to = { row: newRow, col: newCol };
               const from = { row: i, col: j };
+              const targetTile = gameState.board[to.row][to.col];
 
-              if (isValidMove(from, to, gameState.board, "P2", gameState)) {
-                const score =
-                  CAPTURE_SCORES[gameState.board[to.row][to.col].type] || 0;
+              // 이동이 가능하고 포획할 수 있는 경우만 검사
+              if (
+                isValidMove(from, to, gameState.board, "P2", gameState) &&
+                canCapture(tile, targetTile, from, to)
+              ) {
+                const score = CAPTURE_SCORES[targetTile.type] || 0;
 
+                // 곰이 사냥꾼/나무꾼을 포획하는 경우 우선순위 부여
                 const priorityScore =
                   tile.type === "BEAR" &&
-                  gameState.board[to.row][to.col].type === "HUNTER"
-                    ? 100
-                    : score * 2;
+                  (targetTile.type === "HUNTER" ||
+                    targetTile.type === "LUMBERJACK")
+                    ? score * 2
+                    : score;
 
                 if (priorityScore > bestScore) {
                   bestScore = priorityScore;
-                  bestMove = {
-                    from: { row: i, col: j },
-                    to: { row: newRow, col: newCol },
-                  };
+                  bestMove = { from, to };
                 }
               }
             }
@@ -379,7 +381,9 @@ function App() {
         }
       }
     }
-    return bestMove;
+    console.log("bestMove", bestScore, bestMove);
+    // 포획 가능한 타일이 있는 경우에만 이동, 없으면 null 반환
+    return bestScore > 0 ? bestMove : null;
   };
 
   const findUnrevealedTiles = (): Position[] => {
@@ -402,10 +406,22 @@ function App() {
       for (let j = GAME_AREA_START; j < GAME_AREA_START + GAME_AREA_SIZE; j++) {
         const tile = gameState.board[i][j];
         if (tile.owner === "P2" && tile.isRevealed) {
+          // 이동 가능한 범위를 보드 크기로 제한
           for (let di = -GAME_AREA_SIZE; di <= GAME_AREA_SIZE; di++) {
             for (let dj = -GAME_AREA_SIZE; dj <= GAME_AREA_SIZE; dj++) {
               const newRow = i + di;
               const newCol = j + dj;
+
+              // 보드 범위를 벗어나는 경우 스킵
+              if (
+                newRow < 0 ||
+                newRow >= BOARD_SIZE ||
+                newCol < 0 ||
+                newCol >= BOARD_SIZE
+              ) {
+                continue;
+              }
+
               const to = { row: newRow, col: newCol };
               const from = { row: i, col: j };
 
@@ -441,7 +457,7 @@ function App() {
   };
 
   const findBestEscapeMove = (): { from: Position; to: Position } | null => {
-    if (!gameState.finalPhase) return null; // 탈출은 마지막 단계에서만 가능
+    if (!gameState.finalPhase) return null;
 
     let bestMove = null;
     let bestScore = -Infinity;
@@ -455,9 +471,27 @@ function App() {
             const from = { row: i, col: j };
             const to = { row: exit.row, col: exit.col };
 
+            // 보드 범위를 벗어나는지 확인
+            if (
+              to.row < 0 ||
+              to.row >= BOARD_SIZE ||
+              to.col < 0 ||
+              to.col >= BOARD_SIZE
+            ) {
+              continue;
+            }
+
+            const distance = Math.abs(i - exit.row) + Math.abs(j - exit.col);
+
+            // 타일 타입별 이동 제한 검사
+            if (tile.type === "BEAR" || tile.type === "LUMBERJACK") {
+              if (distance > 1) continue;
+            } else if (["FOX", "DUCK", "PHEASANT"].includes(tile.type)) {
+              if (from.row !== exit.row && from.col !== exit.col) continue;
+            }
+
             if (isValidMove(from, to, gameState.board, "P2", gameState)) {
               const escapeScore = ESCAPE_SCORES[tile.type] || 0;
-
               if (escapeScore > bestScore) {
                 bestScore = escapeScore;
                 bestMove = { from, to };
@@ -475,7 +509,28 @@ function App() {
 
     const tile = gameState.board[row][col];
 
+    // 이미 타일이 선택된 상태에서
     if (gameState.selectedTile) {
+      // 1. 같은 타일을 다시 클릭하거나
+      // 2. 이동 불가능한 타일을 클릭했을 때 선택 해제
+      if (
+        (gameState.selectedTile.row === row &&
+          gameState.selectedTile.col === col) ||
+        !isValidMove(
+          gameState.selectedTile,
+          { row, col },
+          gameState.board,
+          "P1",
+          gameState
+        )
+      ) {
+        setGameState((prev) => ({
+          ...prev,
+          selectedTile: null,
+        }));
+        return;
+      }
+
       handleMove(gameState.selectedTile, { row, col });
       return;
     }
@@ -600,6 +655,7 @@ function App() {
         className={`game-container ${
           gameState.finalPhase ? "final-phase" : ""
         }`}
+        data-ai-turn={gameState.isAITurn}
       >
         <div className="game-info">
           <div>

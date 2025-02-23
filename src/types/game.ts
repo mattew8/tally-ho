@@ -50,7 +50,7 @@ export const CAPTURE_SCORES: Record<TileType, number> = {
   DUCK: 2, // 여우/곰이 오리 포획
   PHEASANT: 3, // 여우/곰이 꿩 포획
   TREE: 2, // 나무꾼이 나무 제거
-  LUMBERJACK: 0, // 포획 점수 없음
+  LUMBERJACK: 5, // 곰이 나무꾼 포획
   CABIN: 0, // 포획 불가
   EMPTY: 0, // 포획 점수 없음
   EXIT: 0, // 포획 점수 없음
