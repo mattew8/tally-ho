@@ -708,13 +708,24 @@ function App() {
       const movingTile = newBoard[from.row][from.col];
       const targetTile = newBoard[to.row][to.col];
 
-      // 타일 이동 로직 추가
-      newBoard[to.row][to.col] = movingTile;
-      newBoard[from.row][from.col] = {
-        type: "EMPTY",
-        isRevealed: true,
-        owner: "NEUTRAL",
-      };
+      // 타일 이동 로직 수정
+      // 탈출구로 이동하는 경우, 이동하는 타일은 제거되고 탈출구는 그대로 유지
+      if (targetTile.type === "EXIT") {
+        newBoard[from.row][from.col] = {
+          type: "EMPTY",
+          isRevealed: true,
+          owner: "NEUTRAL",
+        };
+        // 탈출구는 그대로 유지 (newBoard[to.row][to.col]은 변경하지 않음)
+      } else {
+        // 일반적인 이동의 경우 기존 로직 유지
+        newBoard[to.row][to.col] = movingTile;
+        newBoard[from.row][from.col] = {
+          type: "EMPTY",
+          isRevealed: true,
+          owner: "NEUTRAL",
+        };
+      }
 
       const newScores = { ...gameState.scores };
       const currentTeam = gameState.isAITurn ? "ANIMALS" : "HUMANS";
