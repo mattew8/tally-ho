@@ -268,7 +268,7 @@ function App() {
     gameOver: false,
     finalPhase: false,
     remainingMoves: { P1: 5, P2: 5 },
-    isAITurn: false,
+    isAITurn: true,
   });
 
   useEffect(() => {
@@ -674,6 +674,7 @@ function App() {
       ...prev,
       board: newBoard,
       finalPhase: shouldStartFinalPhase,
+      isAITurn: true,
     }));
   };
 
@@ -736,9 +737,11 @@ function App() {
         newRemainingMoves[currentPlayer]--;
       }
 
+      // 두 플레이어 모두 이동 횟수를 소진했을 때 게임 종료
       const isGameOver =
         gameState.finalPhase &&
-        (newRemainingMoves.P1 === 0 || newRemainingMoves.P2 === 0);
+        newRemainingMoves.P1 === 0 &&
+        newRemainingMoves.P2 === 0;
 
       setGameState((prev) => ({
         ...prev,
