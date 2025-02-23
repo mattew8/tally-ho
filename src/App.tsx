@@ -275,7 +275,7 @@ function App() {
     if (gameState.isAITurn && !gameState.gameOver) {
       const timer = setTimeout(() => {
         handleAITurn();
-      }, 1000);
+      }, 500);
 
       return () => clearTimeout(timer);
     }
@@ -381,7 +381,6 @@ function App() {
         }
       }
     }
-    console.log("bestMove", bestScore, bestMove);
     // 포획 가능한 타일이 있는 경우에만 이동, 없으면 null 반환
     return bestScore > 0 ? bestMove : null;
   };
@@ -406,31 +405,15 @@ function App() {
       for (let j = GAME_AREA_START; j < GAME_AREA_START + GAME_AREA_SIZE; j++) {
         const tile = gameState.board[i][j];
         if (tile.owner === "P2" && tile.isRevealed) {
-          // 이동 가능한 범위를 보드 크기로 제한
-          for (let di = -GAME_AREA_SIZE; di <= GAME_AREA_SIZE; di++) {
-            for (let dj = -GAME_AREA_SIZE; dj <= GAME_AREA_SIZE; dj++) {
-              const newRow = i + di;
-              const newCol = j + dj;
+          const possibleMoves = getPossibleMoves({ row: i, col: j }, tile.type);
 
-              // 보드 범위를 벗어나는 경우 스킵
-              if (
-                newRow < 0 ||
-                newRow >= BOARD_SIZE ||
-                newCol < 0 ||
-                newCol >= BOARD_SIZE
-              ) {
-                continue;
-              }
-
-              const to = { row: newRow, col: newCol };
-              const from = { row: i, col: j };
-
-              if (isValidMove(from, to, gameState.board, "P2", gameState)) {
-                const score = evaluateMove(from, to);
-                if (score > bestScore) {
-                  bestScore = score;
-                  bestMove = { from, to };
-                }
+          for (const to of possibleMoves) {
+            const from = { row: i, col: j };
+            if (isValidMove(from, to, gameState.board, "P2", gameState)) {
+              const score = evaluateBestMove(from, to);
+              if (score > bestScore) {
+                bestScore = score;
+                bestMove = { from, to };
               }
             }
           }
@@ -440,20 +423,141 @@ function App() {
     return bestMove;
   };
 
-  const evaluateMove = (from: Position, to: Position): number => {
+  const getPossibleMoves = (from: Position, tileType: TileType): Position[] => {
+    const moves: Position[] = [];
+
+    switch (tileType) {
+      case "BEAR":
+      case "LUMBERJACK": {
+        // 상하좌우 한 칸만 이동 가능
+        const directions = [
+          [-1, 0],
+          [1, 0],
+          [0, -1],
+          [0, 1],
+        ];
+
+        for (const [dx, dy] of directions) {
+          const newRow = from.row + dx;
+          const newCol = from.col + dy;
+          if (isInBoard(newRow, newCol)) {
+            moves.push({ row: newRow, col: newCol });
+          }
+        }
+        break;
+      }
+
+      case "FOX":
+      case "DUCK":
+      case "PHEASANT": {
+        // 상하좌우 직선으로 여러 칸 이동 가능
+        // 가로 방향
+        for (let col = 0; col < BOARD_SIZE; col++) {
+          if (col !== from.col) {
+            moves.push({ row: from.row, col });
+          }
+        }
+        // 세로 방향
+        for (let row = 0; row < BOARD_SIZE; row++) {
+          if (row !== from.row) {
+            moves.push({ row, col: from.col });
+          }
+        }
+        break;
+      }
+    }
+
+    return moves;
+  };
+
+  const isInBoard = (row: number, col: number): boolean => {
+    return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE;
+  };
+
+  const evaluateBestMove = (from: Position, to: Position): number => {
     const fromTile = gameState.board[from.row][from.col];
     const toTile = gameState.board[to.row][to.col];
     let score = 0;
 
+    // 기존 포획 점수
     if (canCapture(fromTile, toTile, from, to)) {
       score += CAPTURE_SCORES[toTile.type] * 2;
     }
 
+    // 탈출 점수
     if (gameState.finalPhase && toTile.type === "EXIT") {
       score += 1000;
     }
 
+    // 사냥꾼의 사정거리 체크
+    const isInHunterRange = checkIfInHunterRange(to);
+    if (isInHunterRange) {
+      score -= 100; // 사냥꾼의 사정거리에 있으면 큰 페널티
+    }
+
+    // 적 타일과의 거리 고려 (사냥꾼 제외)
+    const nearbyEnemies = countNearbyEnemies(to);
+    if (fromTile.type === "BEAR") {
+      score += nearbyEnemies * 5; // 곰은 적에게 접근 (단, 사냥꾼 사정거리는 피함)
+    } else {
+      score -= nearbyEnemies * 3; // 다른 동물들은 적을 피함
+    }
+
     return score;
+  };
+
+  // 새로운 함수: 해당 위치가 사냥꾼의 사정거리에 있는지 확인
+  const checkIfInHunterRange = (pos: Position): boolean => {
+    for (let i = 0; i < BOARD_SIZE; i++) {
+      for (let j = 0; j < BOARD_SIZE; j++) {
+        const tile = gameState.board[i][j];
+        if (
+          tile.type === "HUNTER" &&
+          tile.isRevealed &&
+          tile.owner === "P1" &&
+          tile.direction
+        ) {
+          // 사냥꾼의 방향에 따라 사정거리 체크
+          switch (tile.direction) {
+            case "UP":
+              if (pos.col === j && pos.row < i) return true;
+              break;
+            case "DOWN":
+              if (pos.col === j && pos.row > i) return true;
+              break;
+            case "LEFT":
+              if (pos.row === i && pos.col < j) return true;
+              break;
+            case "RIGHT":
+              if (pos.row === i && pos.col > j) return true;
+              break;
+          }
+        }
+      }
+    }
+    return false;
+  };
+
+  const countNearbyEnemies = (pos: Position): number => {
+    let count = 0;
+    for (let i = -1; i <= 1; i++) {
+      for (let j = -1; j <= 1; j++) {
+        const newRow = pos.row + i;
+        const newCol = pos.col + j;
+        if (
+          newRow >= 0 &&
+          newRow < BOARD_SIZE &&
+          newCol >= 0 &&
+          newCol < BOARD_SIZE
+        ) {
+          const tile = gameState.board[newRow][newCol];
+          if (tile.owner === "P1" && tile.isRevealed) {
+            count++;
+          }
+        }
+      }
+    }
+    return count;
   };
 
   const findBestEscapeMove = (): { from: Position; to: Position } | null => {
