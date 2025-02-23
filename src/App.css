@@ -1,14 +1,17 @@
 /* 전체 게임 컨테이너 */
 .game-container {
+  position: absolute; /* fixed body 내에서 스크롤 가능하도록 */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 20px;
   background-color: #3e2f1d; /* 전체 배경을 나무 느낌으로 변경 */
-  min-height: 100vh;
   box-sizing: border-box; /* padding이 height에 포함되도록 설정 */
-  margin: 0; /* 혹시 모를 마진 제거 */
-  overflow-y: auto; /* 수직 스크롤 허용 */
+  overflow-y: auto; /* 컨테이너 내부 스크롤 활성화 */
   overflow-x: hidden; /* 수평 스크롤은 계속 막음 */
 }
 
@@ -18,8 +21,9 @@ html {
   margin: 0;
   padding: 0;
   height: 100%;
-  overflow-y: auto; /* 수직 스크롤 허용 */
-  overflow-x: hidden; /* 수평 스크롤은 계속 막음 */
+  width: 100%;
+  position: fixed; /* 전체 화면 고정 */
+  overflow: hidden; /* 스크롤 비활성화 */
 }
 
 /* 게임 정보 */
@@ -56,6 +60,7 @@ html {
 /* 마지막 단계에서 게임판 위치 조정 */
 .final-phase .game-board {
   transform: translateY(30px); /* 또는 필요한 만큼의 픽셀 값 조정 */
+  margin-bottom: 80px;
 }
 
 /* 기본 타일 스타일 */
