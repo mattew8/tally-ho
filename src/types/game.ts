@@ -1,4 +1,4 @@
-export type Player = "P1" | "P2";
+export type Team = "HUMANS" | "ANIMALS";
 
 export type TileType =
   | "HUNTER" // 사냥꾼
@@ -22,22 +22,22 @@ export interface Position {
 export interface Tile {
   type: TileType;
   isRevealed: boolean;
-  owner: Player | "NEUTRAL";
+  owner: Team | "NEUTRAL";
   direction?: Direction; // 사냥꾼의 방향
 }
 
 export interface GameState {
   board: Tile[][];
   scores: {
-    P1: number;
-    P2: number;
+    HUMANS: number;
+    ANIMALS: number;
   };
   selectedTile: Position | null;
   gameOver: boolean;
   finalPhase: boolean;
   remainingMoves: {
-    P1: number;
-    P2: number;
+    HUMANS: number;
+    ANIMALS: number;
   };
   isAITurn: boolean;
 }

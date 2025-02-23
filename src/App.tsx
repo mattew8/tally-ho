@@ -3,7 +3,7 @@ import {
   GameState,
   Tile,
   TileType,
-  Player,
+  Team,
   Position,
   CAPTURE_SCORES,
   Direction,
@@ -76,9 +76,9 @@ const createInitialBoard = (): Tile[][] => {
           isRevealed: false,
           owner:
             type === "HUNTER" || type === "LUMBERJACK"
-              ? "P1"
+              ? "HUMANS"
               : type === "FOX" || type === "BEAR"
-              ? "P2"
+              ? "ANIMALS"
               : "NEUTRAL",
           direction: type === "HUNTER" ? getRandomDirection() : undefined,
         };
@@ -102,7 +102,7 @@ function isValidMove(
   from: Position,
   to: Position,
   board: Tile[][],
-  currentPlayer: Player,
+  currentTeam: Team,
   gameState: GameState
 ): boolean {
   const fromTile = board[from.row][from.col];
@@ -129,7 +129,7 @@ function isValidMove(
 
   // 자신의 타일이거나 중립 타일(오리, 꿩)만 이동 가능
   if (
-    fromTile.owner !== currentPlayer &&
+    fromTile.owner !== currentTeam &&
     !(
       fromTile.owner === "NEUTRAL" &&
       ["DUCK", "PHEASANT"].includes(fromTile.type)
@@ -145,11 +145,10 @@ function isValidMove(
 
   // 탈출구로의 이동은 마지막 단계에서만 가능
   if (toTile.type === "EXIT") {
-    // 마지막 단계가 아니면 탈출 불가
     if (!gameState.finalPhase) return false;
 
     // 자신의 타일만 탈출 가능
-    if (currentPlayer === "P1") {
+    if (currentTeam === "HUMANS") {
       return ["HUNTER", "LUMBERJACK"].includes(fromTile.type);
     } else {
       return ["FOX", "BEAR"].includes(fromTile.type);
@@ -263,11 +262,11 @@ function App() {
 
   const [gameState, setGameState] = useState<GameState>({
     board: createInitialBoard(),
-    scores: { P1: 0, P2: 0 },
+    scores: { HUMANS: 0, ANIMALS: 0 },
     selectedTile: null,
     gameOver: false,
     finalPhase: false,
-    remainingMoves: { P1: 5, P2: 5 },
+    remainingMoves: { HUMANS: 5, ANIMALS: 5 },
     isAITurn: true,
   });
 
@@ -337,7 +336,7 @@ function App() {
       for (let j = 0; j < BOARD_SIZE; j++) {
         const tile = gameState.board[i][j];
 
-        if (tile.owner === "P2" && tile.isRevealed) {
+        if (tile.owner === "ANIMALS" && tile.isRevealed) {
           for (let di = -BOARD_SIZE; di <= BOARD_SIZE; di++) {
             for (let dj = -BOARD_SIZE; dj <= BOARD_SIZE; dj++) {
               const newRow = i + di;
@@ -358,7 +357,7 @@ function App() {
 
               // 이동이 가능하고 포획할 수 있는 경우만 검사
               if (
-                isValidMove(from, to, gameState.board, "P2", gameState) &&
+                isValidMove(from, to, gameState.board, "ANIMALS", gameState) &&
                 canCapture(tile, targetTile, from, to)
               ) {
                 const score = CAPTURE_SCORES[targetTile.type] || 0;
@@ -404,12 +403,12 @@ function App() {
     for (let i = GAME_AREA_START; i < GAME_AREA_START + GAME_AREA_SIZE; i++) {
       for (let j = GAME_AREA_START; j < GAME_AREA_START + GAME_AREA_SIZE; j++) {
         const tile = gameState.board[i][j];
-        if (tile.owner === "P2" && tile.isRevealed) {
+        if (tile.owner === "ANIMALS" && tile.isRevealed) {
           const possibleMoves = getPossibleMoves({ row: i, col: j }, tile.type);
 
           for (const to of possibleMoves) {
             const from = { row: i, col: j };
-            if (isValidMove(from, to, gameState.board, "P2", gameState)) {
+            if (isValidMove(from, to, gameState.board, "ANIMALS", gameState)) {
               const score = evaluateBestMove(from, to);
               if (score > bestScore) {
                 bestScore = score;
@@ -514,7 +513,7 @@ function App() {
         if (
           tile.type === "HUNTER" &&
           tile.isRevealed &&
-          tile.owner === "P1" &&
+          tile.owner === "HUMANS" &&
           tile.direction
         ) {
           // 사냥꾼의 방향에 따라 사정거리 체크
@@ -551,7 +550,7 @@ function App() {
           newCol < BOARD_SIZE
         ) {
           const tile = gameState.board[newRow][newCol];
-          if (tile.owner === "P1" && tile.isRevealed) {
+          if (tile.owner === "HUMANS" && tile.isRevealed) {
             count++;
           }
         }
@@ -570,7 +569,7 @@ function App() {
       for (let j = GAME_AREA_START; j < GAME_AREA_START + GAME_AREA_SIZE; j++) {
         const tile = gameState.board[i][j];
 
-        if (tile.owner === "P2" && tile.isRevealed) {
+        if (tile.owner === "ANIMALS" && tile.isRevealed) {
           for (const exit of EXIT_LINES) {
             const from = { row: i, col: j };
             const to = { row: exit.row, col: exit.col };
@@ -594,7 +593,7 @@ function App() {
               if (from.row !== exit.row && from.col !== exit.col) continue;
             }
 
-            if (isValidMove(from, to, gameState.board, "P2", gameState)) {
+            if (isValidMove(from, to, gameState.board, "ANIMALS", gameState)) {
               const escapeScore = ESCAPE_SCORES[tile.type] || 0;
               if (escapeScore > bestScore) {
                 bestScore = escapeScore;
@@ -624,7 +623,7 @@ function App() {
           gameState.selectedTile,
           { row, col },
           gameState.board,
-          "P1",
+          "HUMANS",
           gameState
         )
       ) {
@@ -641,7 +640,7 @@ function App() {
 
     if (tile.isRevealed) {
       if (
-        tile.owner === "P1" ||
+        tile.owner === "HUMANS" ||
         (tile.owner === "NEUTRAL" && ["DUCK", "PHEASANT"].includes(tile.type))
       ) {
         setGameState((prev) => ({
@@ -693,7 +692,7 @@ function App() {
         from,
         to,
         gameState.board,
-        gameState.isAITurn ? "P2" : "P1",
+        gameState.isAITurn ? "ANIMALS" : "HUMANS",
         gameState
       )
     ) {
@@ -702,15 +701,16 @@ function App() {
       const targetTile = newBoard[to.row][to.col];
 
       const newScores = { ...gameState.scores };
-      const currentPlayer = gameState.isAITurn ? "P2" : "P1";
+      const currentTeam = gameState.isAITurn ? "ANIMALS" : "HUMANS";
 
       if (gameState.finalPhase && targetTile.type === "EXIT") {
         if (
-          (currentPlayer === "P1" &&
+          (currentTeam === "HUMANS" &&
             ["HUNTER", "LUMBERJACK"].includes(movingTile.type)) ||
-          (currentPlayer === "P2" && ["FOX", "BEAR"].includes(movingTile.type))
+          (currentTeam === "ANIMALS" &&
+            ["FOX", "BEAR"].includes(movingTile.type))
         ) {
-          newScores[currentPlayer] += ESCAPE_SCORES[movingTile.type] || 0;
+          newScores[currentTeam] += ESCAPE_SCORES[movingTile.type] || 0;
 
           newBoard[from.row][from.col] = {
             type: "EMPTY",
@@ -721,7 +721,7 @@ function App() {
       } else {
         if (canCapture(movingTile, targetTile, from, to)) {
           const score = CAPTURE_SCORES[targetTile.type];
-          newScores[currentPlayer] += score;
+          newScores[currentTeam] += score;
         }
 
         newBoard[to.row][to.col] = movingTile;
@@ -734,14 +734,14 @@ function App() {
 
       const newRemainingMoves = { ...gameState.remainingMoves };
       if (gameState.finalPhase) {
-        newRemainingMoves[currentPlayer]--;
+        newRemainingMoves[currentTeam]--;
       }
 
       // 두 플레이어 모두 이동 횟수를 소진했을 때 게임 종료
       const isGameOver =
         gameState.finalPhase &&
-        newRemainingMoves.P1 === 0 &&
-        newRemainingMoves.P2 === 0;
+        newRemainingMoves.HUMANS === 0 &&
+        newRemainingMoves.ANIMALS === 0;
 
       setGameState((prev) => ({
         ...prev,
@@ -770,7 +770,8 @@ function App() {
             {gameState.isAITurn ? "AI (동물팀)" : "플레이어 (인간팀)"}
           </div>
           <div>
-            점수 - 인간팀: {gameState.scores.P1} | 동물팀: {gameState.scores.P2}
+            점수 - 인간팀: {gameState.scores.HUMANS} | 동물팀:{" "}
+            {gameState.scores.ANIMALS}
           </div>
           <div className="turn-info">
             행동을 선택하세요:
@@ -785,9 +786,9 @@ function App() {
           {gameState.gameOver && (
             <div className="game-over">
               게임 종료! 승자:{" "}
-              {gameState.scores.P1 > gameState.scores.P2
+              {gameState.scores.HUMANS > gameState.scores.ANIMALS
                 ? "인간팀"
-                : gameState.scores.P1 < gameState.scores.P2
+                : gameState.scores.HUMANS < gameState.scores.ANIMALS
                 ? "동물팀"
                 : "무승부"}
             </div>
@@ -796,8 +797,8 @@ function App() {
             <div className="final-phase-message">
               마지막 단계: 탈출 가능!
               <br />
-              남은 이동 횟수 - 인간팀: {gameState.remainingMoves.P1} | 동물팀:{" "}
-              {gameState.remainingMoves.P2}
+              남은 이동 횟수 - 인간팀: {gameState.remainingMoves.HUMANS} |
+              동물팀: {gameState.remainingMoves.ANIMALS}
             </div>
           )}
         </div>
@@ -823,7 +824,7 @@ function App() {
                   gameState.selectedTile,
                   { row: i, col: j },
                   gameState.board,
-                  "P1",
+                  "HUMANS",
                   gameState
                 );
 
@@ -857,7 +858,7 @@ function App() {
                   gameState.selectedTile,
                   { row: i, col: j },
                   gameState.board,
-                  "P1",
+                  "HUMANS",
                   gameState
                 );
 
