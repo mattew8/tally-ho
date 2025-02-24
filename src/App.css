@@ -251,11 +251,29 @@ html {
 
 /* 게임 종료 메시지 */
 .game-over {
-  margin-top: 10px;
-  font-size: 1.5em;
-  font-weight: bold;
-  color: #ff4444;
-  text-shadow: 1px 1px 2px black;
+  margin-top: 20px;
+  padding: 20px;
+  background-color: #6b4f37; /* 기존 배경보다 약간 더 밝은 색상 */
+  color: #ffd700; /* 텍스트 색상을 금색으로 변경 */
+  border-radius: 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+  border: 2px solid #8b7355; /* 테두리 추가 */
+  animation: fadeIn 0.5s ease-in; /* 페이드인 애니메이션 추가 */
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* 마지막 단계 안내 */
@@ -632,4 +650,20 @@ html {
   .tile:not(.revealed) {
     font-size: 1.2em !important;
   }
+}
+
+.restart-button {
+  margin-top: 10px;
+  padding: 10px 20px;
+  font-size: 1.2em;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.restart-button:hover {
+  background-color: #45a049;
 }

@@ -808,6 +808,19 @@ function App() {
     }
   };
 
+  const resetGame = () => {
+    setGameState({
+      board: createInitialBoard(),
+      scores: { HUMANS: 0, ANIMALS: 0 },
+      selectedTile: null,
+      gameOver: false,
+      finalPhase: false,
+      remainingMoves: { HUMANS: 5, ANIMALS: 5 },
+      isAITurn: true,
+      logs: [],
+    });
+  };
+
   return (
     <>
       {showRules && <RulesModal onClose={handleCloseRules} />}
@@ -844,6 +857,9 @@ function App() {
                 : gameState.scores.HUMANS < gameState.scores.ANIMALS
                 ? "동물팀"
                 : "무승부"}
+              <button className="restart-button" onClick={resetGame}>
+                한판 더!
+              </button>
             </div>
           )}
           {gameState.finalPhase && (
