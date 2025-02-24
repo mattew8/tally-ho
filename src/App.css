@@ -97,6 +97,7 @@ html {
   background-color: #8b7355 !important; /* 더 밝은 갈색으로 변경 */
   border: 1px solid #3e2f1d;
   cursor: pointer;
+  font-size: 1.4em !important; /* 다른 font-size 설정을 덮어쓰기 위해 !important 사용 */
 }
 
 /* 타일 공개되었을 때 */
@@ -168,6 +169,12 @@ html {
 .tile[data-type="HUNTER"] {
   background-color: #b22222; /* 짙은 붉은색 */
   color: white;
+  font-size: 0.8em; /* 화살표 조합 이모지의 기본 크기를 줄임 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1; /* 줄 간격 최소화 */
+  white-space: nowrap; /* 화살표가 줄바꿈되지 않도록 */
 }
 
 /* 나무꾼 */
@@ -476,4 +483,153 @@ html {
 
 .game-logs li:last-child {
   border-bottom: none;
+}
+
+/* 모바일 반응형 스타일 */
+@media screen and (max-width: 768px) {
+  .game-container {
+    padding: 10px;
+  }
+
+  .game-info {
+    font-size: 1em;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+
+  .game-board {
+    grid-template-columns: repeat(9, minmax(40px, 1fr));
+    grid-template-rows: repeat(9, minmax(40px, 1fr));
+    gap: 2px;
+    padding: 5px;
+  }
+
+  .tile {
+    width: auto;
+    height: auto;
+    aspect-ratio: 1;
+    font-size: 1.4em;
+  }
+
+  .game-logs {
+    height: 60px;
+    font-size: 0.9em;
+  }
+
+  .final-phase-message {
+    font-size: 0.9em;
+  }
+
+  .rules-button {
+    padding: 6px 12px;
+    font-size: 0.9em;
+  }
+
+  .tile[data-type="HUNTER"].revealed {
+    font-size: 0.7em;
+  }
+}
+
+/* 더 작은 화면을 위한 추가 스타일 */
+@media screen and (max-width: 480px) {
+  .game-board {
+    grid-template-columns: repeat(9, minmax(35px, 1fr));
+    grid-template-rows: repeat(9, minmax(35px, 1fr));
+  }
+
+  .tile {
+    font-size: 1.2em;
+  }
+
+  .game-info {
+    font-size: 0.9em;
+  }
+
+  /* 모바일에서 툴팁 위치 조정 */
+  .tile[data-huntable="true"]:hover::after,
+  .tile[data-movable="true"]:not([data-huntable="true"]):hover::after,
+  .tile[data-escapable="true"]:hover::after,
+  .tile:not(.revealed):not([data-disabled="true"]):hover::after {
+    bottom: auto;
+    top: 100%;
+    font-size: 12px;
+    padding: 3px 6px;
+  }
+
+  /* 모바일에서 선택된 타일의 크기 조정 */
+  .tile.selected {
+    transform: scale(1.05);
+  }
+
+  .tile[data-type="HUNTER"].revealed {
+    font-size: 0.6em;
+  }
+}
+
+/* 가로 모드를 위한 스타일 */
+@media screen and (max-height: 600px) and (orientation: landscape) {
+  .game-container {
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: flex-start;
+    padding: 5px;
+  }
+
+  .game-info {
+    width: 30%;
+    margin-right: 10px;
+    font-size: 0.8em;
+  }
+
+  .game-board {
+    width: 65%;
+    grid-template-columns: repeat(9, minmax(35px, 1fr));
+    grid-template-rows: repeat(9, minmax(35px, 1fr));
+  }
+
+  .game-logs {
+    height: 50px;
+  }
+}
+
+/* 터치 디바이스를 위한 스타일 */
+@media (hover: none) {
+  .tile:hover {
+    transform: none;
+  }
+
+  /* 터치 디바이스에서는 호버 효과 대신 active 상태 사용 */
+  .tile:active {
+    transform: scale(1.05);
+  }
+
+  /* 터치 디바이스에서 툴팁 숨기기 */
+  .tile[data-huntable="true"]:hover::after,
+  .tile[data-movable="true"]:not([data-huntable="true"]):hover::after,
+  .tile[data-escapable="true"]:hover::after,
+  .tile:not(.revealed):not([data-disabled="true"]):hover::after {
+    display: none;
+  }
+}
+
+/* 사냥꾼 타일 스타일 수정 */
+.tile[data-type="HUNTER"].revealed {
+  /* .revealed 클래스가 있을 때만 적용 */
+  font-size: 0.8em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* 비공개 타일은 모두 동일한 크기로 표시 */
+.tile:not(.revealed) {
+  font-size: 1.4em !important; /* 다른 font-size 설정을 덮어쓰기 위해 !important 사용 */
+}
+
+@media screen and (max-width: 480px) {
+  .tile:not(.revealed) {
+    font-size: 1.2em !important;
+  }
 }

@@ -203,3 +203,25 @@
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 8px;
 }
+
+/* 모바일 반응형 스타일 */
+@media screen and (max-width: 768px) {
+  .modal {
+    width: 95%;
+    padding: 20px;
+    max-height: 85vh;
+  }
+
+  .modal-title {
+    font-size: 1.5em;
+  }
+
+  .modal-content {
+    font-size: 1em;
+  }
+
+  .start-button {
+    padding: 12px 30px;
+    font-size: 1.1em;
+  }
+}
