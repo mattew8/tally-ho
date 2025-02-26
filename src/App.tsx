@@ -1,264 +1,34 @@
 import { useState, useEffect } from "react";
+import "./App.css";
 import {
   GameState,
-  Tile,
-  TileType,
-  Team,
   Position,
   CAPTURE_SCORES,
-  Direction,
   ESCAPE_SCORES,
 } from "./types/game";
-import "./App.css";
 import { RulesModal } from "./components/RulesModal";
-
-const BOARD_SIZE = 9; // 전체 보드 크기
-const GAME_AREA_START = 1; // 실제 게임 영역 시작 위치
-const GAME_AREA_SIZE = 7; // 실제 게임 영역 크기
-
-// 탈출구 설정
-const EXIT_LINES: Position[] = [
-  { row: 0, col: 4 }, // 상
-  { row: 8, col: 4 }, // 하
-  { row: 4, col: 0 }, // 좌
-  { row: 4, col: 8 }, // 우
-];
-
-const createInitialBoard = (): Tile[][] => {
-  // 빈 9x9 보드 생성
-  const board: Tile[][] = Array(BOARD_SIZE)
-    .fill(null)
-    .map(() =>
-      Array(BOARD_SIZE)
-        .fill(null)
-        .map(() => ({
-          type: "EMPTY",
-          isRevealed: true,
-          owner: "NEUTRAL",
-        }))
-    );
-
-  // 타일 구성
-  const tiles: TileType[] = [
-    ...Array(8).fill("HUNTER"),
-    ...Array(2).fill("LUMBERJACK"),
-    ...Array(2).fill("BEAR"),
-    ...Array(6).fill("FOX"),
-    ...Array(8).fill("PHEASANT"),
-    ...Array(7).fill("DUCK"),
-    ...Array(15).fill("TREE"),
-  ];
-
-  // 타일 섞기
-  const shuffledTiles = tiles.sort(() => Math.random() - 0.5);
-  let tileIndex = 0;
-
-  // 7x7 게임 영역에 타일 배치
-  for (let i = 0; i < GAME_AREA_SIZE; i++) {
-    for (let j = 0; j < GAME_AREA_SIZE; j++) {
-      const row = i + GAME_AREA_START;
-      const col = j + GAME_AREA_START;
-
-      // 중앙 칸은 오두막
-      if (
-        i === Math.floor(GAME_AREA_SIZE / 2) &&
-        j === Math.floor(GAME_AREA_SIZE / 2)
-      ) {
-        board[row][col] = {
-          type: "CABIN",
-          isRevealed: true,
-          owner: "NEUTRAL",
-        };
-      } else {
-        const type = shuffledTiles[tileIndex];
-        board[row][col] = {
-          type,
-          isRevealed: false,
-          owner:
-            type === "HUNTER" || type === "LUMBERJACK"
-              ? "HUMANS"
-              : type === "FOX" || type === "BEAR"
-              ? "ANIMALS"
-              : "NEUTRAL",
-          direction: type === "HUNTER" ? getRandomDirection() : undefined,
-        };
-        tileIndex++;
-      }
-    }
-  }
-
-  EXIT_LINES.forEach(({ row, col }) => {
-    board[row][col] = {
-      type: "EXIT",
-      isRevealed: true,
-      owner: "NEUTRAL",
-    };
-  });
-
-  return board;
-};
-
-function isValidMove(
-  from: Position,
-  to: Position,
-  board: Tile[][],
-  currentTeam: Team,
-  gameState: GameState
-): boolean {
-  const fromTile = board[from.row][from.col];
-  const toTile = board[to.row][to.col];
-
-  // 탈출구 라인인지 확인 (탈출구 자체는 제외)
-  const isExitLine =
-    (to.row === 0 ||
-      to.row === BOARD_SIZE - 1 ||
-      to.col === 0 ||
-      to.col === BOARD_SIZE - 1) &&
-    toTile.type !== "EXIT";
-
-  // 탈출구 라인으로는 이동 불가
-  if (isExitLine) return false;
-
-  // 이미 공개된 타일로만 이동 가능
-  if (!fromTile.isRevealed || !toTile.isRevealed) return false;
-
-  // 이동 불가능한 타일 체크
-  if (["TREE", "EMPTY", "CABIN"].includes(fromTile.type)) {
-    return false;
-  }
-
-  // 자신의 타일이거나 중립 타일(오리, 꿩)만 이동 가능
-  if (
-    fromTile.owner !== currentTeam &&
-    !(
-      fromTile.owner === "NEUTRAL" &&
-      ["DUCK", "PHEASANT"].includes(fromTile.type)
-    )
-  ) {
-    return false;
-  }
-
-  // 목적지가 오두막인 경우 이동 불가
-  if (toTile.type === "CABIN") {
-    return false;
-  }
-
-  // 탈출구로의 이동은 마지막 단계에서만 가능
-  if (toTile.type === "EXIT") {
-    if (!gameState.finalPhase) return false;
-
-    // 자신의 타일만 탈출 가능
-    if (currentTeam === "HUMANS") {
-      return ["HUNTER", "LUMBERJACK"].includes(fromTile.type);
-    } else {
-      return ["FOX", "BEAR"].includes(fromTile.type);
-    }
-  }
-
-  // 목적지가 비어있거나 포획할 수 있는 경우만 이동 가능
-  if (toTile.type !== "EMPTY" && !canCapture(fromTile, toTile, from, to)) {
-    return false;
-  }
-
-  const rowDiff = to.row - from.row;
-  const colDiff = to.col - from.col;
-
-  // 직선 이동만 가능 (상하좌우)
-  if (rowDiff !== 0 && colDiff !== 0) {
-    return false;
-  }
-
-  // 곰과 나무꾼은 상하좌우 한 칸만 이동 가능
-  if (fromTile.type === "BEAR" || fromTile.type === "LUMBERJACK") {
-    return Math.abs(rowDiff) + Math.abs(colDiff) === 1;
-  }
-
-  // 사냥꾼, 여우, 오리, 꿩은 직선으로 여러 칸 이동 가능
-  if (["HUNTER", "FOX", "DUCK", "PHEASANT"].includes(fromTile.type)) {
-    const startRow = Math.min(from.row, to.row);
-    const endRow = Math.max(from.row, to.row);
-    const startCol = Math.min(from.col, to.col);
-    const endCol = Math.max(from.col, to.col);
-
-    // 가로 이동
-    if (rowDiff === 0) {
-      for (let col = startCol + 1; col < endCol; col++) {
-        if (board[from.row][col].type !== "EMPTY") {
-          return false; // 경로 상에 타일이 있으면 이동 불가
-        }
-      }
-      return true;
-    }
-
-    // 세로 이동
-    if (colDiff === 0) {
-      for (let row = startRow + 1; row < endRow; row++) {
-        if (board[row][from.col].type !== "EMPTY") {
-          return false; // 경로 상에 타일이 있으면 이동 불가
-        }
-      }
-      return true;
-    }
-  }
-
-  return false;
-}
-
-function canCapture(
-  attacker: Tile,
-  target: Tile,
-  from: Position,
-  to: Position
-): boolean {
-  if (!target.isRevealed) return false;
-
-  switch (attacker.type) {
-    case "HUNTER": {
-      if (!attacker.direction) return false;
-      if (!["FOX", "BEAR", "DUCK", "PHEASANT"].includes(target.type))
-        return false;
-
-      // 사냥꾼의 방향과 타겟의 위치가 일치하는지 확인
-      const rowDiff = to.row - from.row;
-      const colDiff = to.col - from.col;
-
-      switch (attacker.direction) {
-        case "UP":
-          return rowDiff < 0 && colDiff === 0;
-        case "DOWN":
-          return rowDiff > 0 && colDiff === 0;
-        case "LEFT":
-          return colDiff < 0 && rowDiff === 0;
-        case "RIGHT":
-          return colDiff > 0 && rowDiff === 0;
-        default:
-          return false;
-      }
-    }
-    case "LUMBERJACK":
-      return target.type === "TREE";
-    case "FOX":
-      return ["DUCK", "PHEASANT"].includes(target.type);
-    case "BEAR":
-      return target.type === "HUNTER" || target.type === "LUMBERJACK";
-    default:
-      return false;
-  }
-}
+import {
+  createInitialBoard,
+  BOARD_SIZE,
+  GAME_AREA_START,
+  GAME_AREA_SIZE,
+  isValidMove,
+  canCapture,
+  getTileKoreanName,
+  getTileSymbol,
+} from "./service/game";
+import {
+  findBestCaptureMove,
+  findBestEscapeMove,
+  findUnrevealedTiles,
+  findBestMove,
+} from "./service/ai";
 
 function App() {
   const [showRules, setShowRules] = useState(() => {
-    // localStorage에서 설명서 확인 여부를 가져옴
     const hasSeenRules = localStorage.getItem("hasSeenRules");
-    // 설명서를 본 적이 없으면 true, 있으면 false 반환
     return !hasSeenRules;
   });
-
-  const handleCloseRules = () => {
-    // 설명서를 봤다는 정보를 localStorage에 저장
-    localStorage.setItem("hasSeenRules", "true");
-    setShowRules(false);
-  };
 
   const [gameState, setGameState] = useState<GameState>({
     board: createInitialBoard(),
@@ -271,7 +41,6 @@ function App() {
     logs: [],
   });
 
-  // 마지막으로 제어된 타일의 위치를 저장하는 state 추가
   const [lastControlledPosition, setLastControlledPosition] =
     useState<Position | null>(null);
 
@@ -280,336 +49,39 @@ function App() {
       const timer = setTimeout(() => {
         handleAITurn();
       }, 500);
-
       return () => clearTimeout(timer);
     }
   }, [gameState.isAITurn, gameState.gameOver]);
 
   const handleAITurn = () => {
-    // 1. 사냥 가능한 타일 찾기
-    const bestAttack = findBestCaptureMove();
+    const bestAttack = findBestCaptureMove(gameState);
     if (bestAttack) {
-      console.log("bestAttack", bestAttack);
       handleMove(bestAttack.from, bestAttack.to);
       return;
     }
 
-    // 2. 탈출 가능한 타일 찾기
-    const bestEscape = findBestEscapeMove();
+    const bestEscape = findBestEscapeMove(gameState);
     if (bestEscape) {
-      console.log("bestEscape", bestEscape);
       handleMove(bestEscape.from, bestEscape.to);
       return;
     }
 
-    // 3. 뒤집을 수 있는 타일 찾기
-    const unrevealedTiles = findUnrevealedTiles();
-
+    const unrevealedTiles = findUnrevealedTiles(gameState.board);
     if (unrevealedTiles.length > 0) {
-      console.log("unrevealedTiles", unrevealedTiles);
       const randomIndex = Math.floor(Math.random() * unrevealedTiles.length);
       const position = unrevealedTiles[randomIndex];
       handleReveal(position.row, position.col);
-      setGameState((prev) => ({
-        ...prev,
-        isAITurn: false,
-      }));
+      setGameState((prev) => ({ ...prev, isAITurn: false }));
       return;
     }
 
-    // 4. 최적의 이동 수행
-    const bestMove = findBestMove();
+    const bestMove = findBestMove(gameState);
     if (bestMove) {
-      console.log("bestMove", bestMove);
       handleMove(bestMove.from, bestMove.to);
       return;
     }
 
-    // 5. 이동 불가 -> 턴 종료
-    setGameState((prev) => ({
-      ...prev,
-      isAITurn: false,
-    }));
-  };
-
-  const findBestCaptureMove = (): { from: Position; to: Position } | null => {
-    let bestMove = null;
-    let bestScore = -Infinity;
-
-    // 전체 보드를 순회하면서 포획 가능한 타일 찾기
-    for (let i = 0; i < BOARD_SIZE; i++) {
-      for (let j = 0; j < BOARD_SIZE; j++) {
-        const tile = gameState.board[i][j];
-
-        if (tile.owner === "ANIMALS" && tile.isRevealed) {
-          for (let di = -BOARD_SIZE; di <= BOARD_SIZE; di++) {
-            for (let dj = -BOARD_SIZE; dj <= BOARD_SIZE; dj++) {
-              const newRow = i + di;
-              const newCol = j + dj;
-
-              if (
-                newRow < 0 ||
-                newRow >= BOARD_SIZE ||
-                newCol < 0 ||
-                newCol >= BOARD_SIZE
-              ) {
-                continue;
-              }
-
-              const to = { row: newRow, col: newCol };
-              const from = { row: i, col: j };
-              const targetTile = gameState.board[to.row][to.col];
-
-              // 이동이 가능하고 포획할 수 있는 경우만 검사
-              if (
-                isValidMove(from, to, gameState.board, "ANIMALS", gameState) &&
-                canCapture(tile, targetTile, from, to)
-              ) {
-                const score = CAPTURE_SCORES[targetTile.type] || 0;
-
-                // 곰이 사냥꾼/나무꾼을 포획하는 경우 우선순위 부여
-                const priorityScore =
-                  tile.type === "BEAR" &&
-                  (targetTile.type === "HUNTER" ||
-                    targetTile.type === "LUMBERJACK")
-                    ? score * 2
-                    : score;
-
-                if (priorityScore > bestScore) {
-                  bestScore = priorityScore;
-                  bestMove = { from, to };
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-    // 포획 가능한 타일이 있는 경우에만 이동, 없으면 null 반환
-    return bestScore > 0 ? bestMove : null;
-  };
-
-  const findUnrevealedTiles = (): Position[] => {
-    const tiles: Position[] = [];
-    for (let i = GAME_AREA_START; i < GAME_AREA_START + GAME_AREA_SIZE; i++) {
-      for (let j = GAME_AREA_START; j < GAME_AREA_START + GAME_AREA_SIZE; j++) {
-        if (!gameState.board[i][j].isRevealed) {
-          tiles.push({ row: i, col: j });
-        }
-      }
-    }
-    return tiles;
-  };
-
-  const findBestMove = (): { from: Position; to: Position } | null => {
-    let bestMove = null;
-    let bestScore = -Infinity;
-
-    for (let i = GAME_AREA_START; i < GAME_AREA_START + GAME_AREA_SIZE; i++) {
-      for (let j = GAME_AREA_START; j < GAME_AREA_START + GAME_AREA_SIZE; j++) {
-        const tile = gameState.board[i][j];
-        if (tile.owner === "ANIMALS" && tile.isRevealed) {
-          const possibleMoves = getPossibleMoves({ row: i, col: j }, tile.type);
-
-          for (const to of possibleMoves) {
-            const from = { row: i, col: j };
-            if (isValidMove(from, to, gameState.board, "ANIMALS", gameState)) {
-              const score = evaluateBestMove(from, to);
-              if (score > bestScore) {
-                bestScore = score;
-                bestMove = { from, to };
-              }
-            }
-          }
-        }
-      }
-    }
-    return bestMove;
-  };
-
-  const getPossibleMoves = (from: Position, tileType: TileType): Position[] => {
-    const moves: Position[] = [];
-
-    switch (tileType) {
-      case "BEAR":
-      case "LUMBERJACK": {
-        // 상하좌우 한 칸만 이동 가능
-        const directions = [
-          [-1, 0],
-          [1, 0],
-          [0, -1],
-          [0, 1],
-        ];
-
-        for (const [dx, dy] of directions) {
-          const newRow = from.row + dx;
-          const newCol = from.col + dy;
-          if (isInBoard(newRow, newCol)) {
-            moves.push({ row: newRow, col: newCol });
-          }
-        }
-        break;
-      }
-
-      case "FOX":
-      case "DUCK":
-      case "PHEASANT": {
-        // 상하좌우 직선으로 여러 칸 이동 가능
-        // 가로 방향
-        for (let col = 0; col < BOARD_SIZE; col++) {
-          if (col !== from.col) {
-            moves.push({ row: from.row, col });
-          }
-        }
-        // 세로 방향
-        for (let row = 0; row < BOARD_SIZE; row++) {
-          if (row !== from.row) {
-            moves.push({ row, col: from.col });
-          }
-        }
-        break;
-      }
-    }
-
-    return moves;
-  };
-
-  const isInBoard = (row: number, col: number): boolean => {
-    return row >= 0 && row < BOARD_SIZE && col >= 0 && col < BOARD_SIZE;
-  };
-
-  const evaluateBestMove = (from: Position, to: Position): number => {
-    const fromTile = gameState.board[from.row][from.col];
-    const toTile = gameState.board[to.row][to.col];
-    let score = 0;
-
-    // 기존 포획 점수
-    if (canCapture(fromTile, toTile, from, to)) {
-      score += CAPTURE_SCORES[toTile.type] * 2;
-    }
-
-    // 탈출 점수
-    if (gameState.finalPhase && toTile.type === "EXIT") {
-      score += 1000;
-    }
-
-    // 사냥꾼의 사정거리 체크
-    const isInHunterRange = checkIfInHunterRange(to);
-    if (isInHunterRange) {
-      score -= 100; // 사냥꾼의 사정거리에 있으면 큰 페널티
-    }
-
-    // 적 타일과의 거리 고려 (사냥꾼 제외)
-    const nearbyEnemies = countNearbyEnemies(to);
-    if (fromTile.type === "BEAR") {
-      score += nearbyEnemies * 5; // 곰은 적에게 접근 (단, 사냥꾼 사정거리는 피함)
-    } else {
-      score -= nearbyEnemies * 3; // 다른 동물들은 적을 피함
-    }
-
-    return score;
-  };
-
-  // 새로운 함수: 해당 위치가 사냥꾼의 사정거리에 있는지 확인
-  const checkIfInHunterRange = (pos: Position): boolean => {
-    for (let i = 0; i < BOARD_SIZE; i++) {
-      for (let j = 0; j < BOARD_SIZE; j++) {
-        const tile = gameState.board[i][j];
-        if (
-          tile.type === "HUNTER" &&
-          tile.isRevealed &&
-          tile.owner === "HUMANS" &&
-          tile.direction
-        ) {
-          // 사냥꾼의 방향에 따라 사정거리 체크
-          switch (tile.direction) {
-            case "UP":
-              if (pos.col === j && pos.row < i) return true;
-              break;
-            case "DOWN":
-              if (pos.col === j && pos.row > i) return true;
-              break;
-            case "LEFT":
-              if (pos.row === i && pos.col < j) return true;
-              break;
-            case "RIGHT":
-              if (pos.row === i && pos.col > j) return true;
-              break;
-          }
-        }
-      }
-    }
-    return false;
-  };
-
-  const countNearbyEnemies = (pos: Position): number => {
-    let count = 0;
-    for (let i = -1; i <= 1; i++) {
-      for (let j = -1; j <= 1; j++) {
-        const newRow = pos.row + i;
-        const newCol = pos.col + j;
-        if (
-          newRow >= 0 &&
-          newRow < BOARD_SIZE &&
-          newCol >= 0 &&
-          newCol < BOARD_SIZE
-        ) {
-          const tile = gameState.board[newRow][newCol];
-          if (tile.owner === "HUMANS" && tile.isRevealed) {
-            count++;
-          }
-        }
-      }
-    }
-    return count;
-  };
-
-  const findBestEscapeMove = (): { from: Position; to: Position } | null => {
-    if (!gameState.finalPhase) return null;
-
-    let bestMove = null;
-    let bestScore = -Infinity;
-
-    for (let i = GAME_AREA_START; i < GAME_AREA_START + GAME_AREA_SIZE; i++) {
-      for (let j = GAME_AREA_START; j < GAME_AREA_START + GAME_AREA_SIZE; j++) {
-        const tile = gameState.board[i][j];
-
-        if (tile.owner === "ANIMALS" && tile.isRevealed) {
-          for (const exit of EXIT_LINES) {
-            const from = { row: i, col: j };
-            const to = { row: exit.row, col: exit.col };
-
-            // 보드 범위를 벗어나는지 확인
-            if (
-              to.row < 0 ||
-              to.row >= BOARD_SIZE ||
-              to.col < 0 ||
-              to.col >= BOARD_SIZE
-            ) {
-              continue;
-            }
-
-            const distance = Math.abs(i - exit.row) + Math.abs(j - exit.col);
-
-            // 타일 타입별 이동 제한 검사
-            if (tile.type === "BEAR" || tile.type === "LUMBERJACK") {
-              if (distance > 1) continue;
-            } else if (["FOX", "DUCK", "PHEASANT"].includes(tile.type)) {
-              if (from.row !== exit.row && from.col !== exit.col) continue;
-            }
-
-            if (isValidMove(from, to, gameState.board, "ANIMALS", gameState)) {
-              const escapeScore = ESCAPE_SCORES[tile.type] || 0;
-              if (escapeScore > bestScore) {
-                bestScore = escapeScore;
-                bestMove = { from, to };
-              }
-            }
-          }
-        }
-      }
-    }
-    return bestMove;
+    setGameState((prev) => ({ ...prev, isAITurn: false }));
   };
 
   const handleTileClick = (row: number, col: number) => {
@@ -617,10 +89,7 @@ function App() {
 
     const tile = gameState.board[row][col];
 
-    // 이미 타일이 선택된 상태에서
     if (gameState.selectedTile) {
-      // 1. 같은 타일을 다시 클릭하거나
-      // 2. 이동 불가능한 타일을 클릭했을 때 선택 해제
       if (
         (gameState.selectedTile.row === row &&
           gameState.selectedTile.col === col) ||
@@ -632,10 +101,7 @@ function App() {
           gameState
         )
       ) {
-        setGameState((prev) => ({
-          ...prev,
-          selectedTile: null,
-        }));
+        setGameState((prev) => ({ ...prev, selectedTile: null }));
         return;
       }
 
@@ -648,19 +114,13 @@ function App() {
         tile.owner === "HUMANS" ||
         (tile.owner === "NEUTRAL" && ["DUCK", "PHEASANT"].includes(tile.type))
       ) {
-        setGameState((prev) => ({
-          ...prev,
-          selectedTile: { row, col },
-        }));
+        setGameState((prev) => ({ ...prev, selectedTile: { row, col } }));
       }
       return;
     }
 
     handleReveal(row, col);
-    setGameState((prev) => ({
-      ...prev,
-      isAITurn: true,
-    }));
+    setGameState((prev) => ({ ...prev, isAITurn: true }));
   };
 
   const handleReveal = (row: number, col: number) => {
@@ -668,14 +128,15 @@ function App() {
 
     const newBoard = [...gameState.board];
     const tile = newBoard[row][col];
-    newBoard[row][col] = {
-      ...tile,
-      isRevealed: true,
-    };
+    newBoard[row][col] = { ...tile, isRevealed: true };
 
-    const shouldStartFinalPhase = checkAllTilesRevealed(newBoard);
+    const shouldStartFinalPhase = newBoard
+      .flat()
+      .every(
+        (tile) =>
+          tile.isRevealed || tile.type === "EXIT" || tile.type === "EMPTY"
+      );
 
-    // 로그 메시지 생성
     const logMessage = `${
       gameState.isAITurn ? "AI" : "플레이어"
     }가 ${getTileKoreanName(tile.type)} 타일을 열었습니다.`;
@@ -685,137 +146,98 @@ function App() {
       board: newBoard,
       finalPhase: shouldStartFinalPhase,
       isAITurn: true,
-      logs: [logMessage, ...prev.logs].slice(0, 10), // 최근 10개의 로그만 유지
+      logs: [logMessage, ...prev.logs].slice(0, 10),
     }));
 
-    // 타일이 공개되면 마지막 제어 위치 업데이트
     setLastControlledPosition({ row, col });
-  };
-
-  const checkAllTilesRevealed = (board: Tile[][]): boolean => {
-    return board
-      .flat()
-      .every(
-        (tile) =>
-          tile.isRevealed || tile.type === "EXIT" || tile.type === "EMPTY"
-      );
   };
 
   const handleMove = (from: Position, to: Position) => {
     if (
-      isValidMove(
+      !isValidMove(
         from,
         to,
         gameState.board,
         gameState.isAITurn ? "ANIMALS" : "HUMANS",
         gameState
       )
-    ) {
-      const newBoard = [...gameState.board];
-      const movingTile = newBoard[from.row][from.col];
-      const targetTile = newBoard[to.row][to.col];
+    )
+      return;
 
-      // 타일 이동 로직 수정
-      // 탈출구로 이동하는 경우, 이동하는 타일은 제거되고 탈출구는 그대로 유지
-      if (targetTile.type === "EXIT") {
-        newBoard[from.row][from.col] = {
-          type: "EMPTY",
-          isRevealed: true,
-          owner: "NEUTRAL",
-        };
-        // 탈출구는 그대로 유지 (newBoard[to.row][to.col]은 변경하지 않음)
-      } else {
-        // 일반적인 이동의 경우 기존 로직 유지
-        newBoard[to.row][to.col] = movingTile;
-        newBoard[from.row][from.col] = {
-          type: "EMPTY",
-          isRevealed: true,
-          owner: "NEUTRAL",
-        };
-      }
+    const newBoard = [...gameState.board];
+    const movingTile = newBoard[from.row][from.col];
+    const targetTile = newBoard[to.row][to.col];
+    const currentTeam = gameState.isAITurn ? "ANIMALS" : "HUMANS";
 
-      const newScores = { ...gameState.scores };
-      const currentTeam = gameState.isAITurn ? "ANIMALS" : "HUMANS";
-      let logMessage = "";
-
-      if (gameState.finalPhase && targetTile.type === "EXIT") {
-        if (
-          (currentTeam === "HUMANS" &&
-            ["HUNTER", "LUMBERJACK"].includes(movingTile.type)) ||
-          (currentTeam === "ANIMALS" &&
-            ["FOX", "BEAR"].includes(movingTile.type))
-        ) {
-          newScores[currentTeam] += ESCAPE_SCORES[movingTile.type] || 0;
-          logMessage = `${
-            gameState.isAITurn ? "AI" : "플레이어"
-          }의 ${getTileKoreanName(movingTile.type)}이(가) 탈출했습니다!`;
-        }
-      } else {
-        if (canCapture(movingTile, targetTile, from, to)) {
-          const score = CAPTURE_SCORES[targetTile.type];
-          newScores[currentTeam] += score;
-          logMessage = `${
-            gameState.isAITurn ? "AI" : "플레이어"
-          }의 ${getTileKoreanName(movingTile.type)}이(가) ${getTileKoreanName(
-            targetTile.type
-          )}을(를) 잡았습니다!`;
-        } else {
-          logMessage = `${
-            gameState.isAITurn ? "AI" : "플레이어"
-          }의 ${getTileKoreanName(movingTile.type)}이(가) 이동했습니다.`;
-        }
-      }
-
-      const newRemainingMoves = { ...gameState.remainingMoves };
-      if (gameState.finalPhase) {
-        newRemainingMoves[currentTeam]--;
-      }
-
-      const isGameOver =
-        gameState.finalPhase &&
-        newRemainingMoves.HUMANS === 0 &&
-        newRemainingMoves.ANIMALS === 0;
-
-      setGameState((prev) => ({
-        ...prev,
-        board: newBoard,
-        scores: newScores,
-        selectedTile: null,
-        remainingMoves: newRemainingMoves,
-        gameOver: isGameOver,
-        isAITurn: !isGameOver && !prev.isAITurn,
-        logs: [logMessage, ...prev.logs].slice(0, 10),
-      }));
-
-      // 이동이 완료되면 마지막 제어 위치 업데이트
-      setLastControlledPosition(to);
+    if (targetTile.type === "EXIT") {
+      newBoard[from.row][from.col] = {
+        type: "EMPTY",
+        isRevealed: true,
+        owner: "NEUTRAL",
+      };
+    } else {
+      newBoard[to.row][to.col] = movingTile;
+      newBoard[from.row][from.col] = {
+        type: "EMPTY",
+        isRevealed: true,
+        owner: "NEUTRAL",
+      };
     }
+
+    const newScores = { ...gameState.scores };
+    let logMessage = "";
+
+    if (gameState.finalPhase && targetTile.type === "EXIT") {
+      if (
+        (currentTeam === "HUMANS" &&
+          ["HUNTER", "LUMBERJACK"].includes(movingTile.type)) ||
+        (currentTeam === "ANIMALS" && ["FOX", "BEAR"].includes(movingTile.type))
+      ) {
+        newScores[currentTeam] += ESCAPE_SCORES[movingTile.type] || 0;
+        logMessage = `${
+          gameState.isAITurn ? "AI" : "플레이어"
+        }의 ${getTileKoreanName(movingTile.type)}이(가) 탈출했습니다!`;
+      }
+    } else if (canCapture(movingTile, targetTile, from, to)) {
+      newScores[currentTeam] += CAPTURE_SCORES[targetTile.type] || 0;
+      logMessage = `${
+        gameState.isAITurn ? "AI" : "플레이어"
+      }의 ${getTileKoreanName(movingTile.type)}이(가) ${getTileKoreanName(
+        targetTile.type
+      )}을(를) 잡았습니다!`;
+    } else {
+      logMessage = `${
+        gameState.isAITurn ? "AI" : "플레이어"
+      }의 ${getTileKoreanName(movingTile.type)}이(가) 이동했습니다.`;
+    }
+
+    const newRemainingMoves = { ...gameState.remainingMoves };
+    if (gameState.finalPhase) {
+      newRemainingMoves[currentTeam]--;
+    }
+
+    const isGameOver =
+      gameState.finalPhase &&
+      newRemainingMoves.HUMANS === 0 &&
+      newRemainingMoves.ANIMALS === 0;
+
+    setGameState((prev) => ({
+      ...prev,
+      board: newBoard,
+      scores: newScores,
+      selectedTile: null,
+      remainingMoves: newRemainingMoves,
+      gameOver: isGameOver,
+      isAITurn: !isGameOver && !prev.isAITurn,
+      logs: [logMessage, ...prev.logs].slice(0, 10),
+    }));
+
+    setLastControlledPosition(to);
   };
 
-  // 타일 한글 이름 변환 함수 추가
-  const getTileKoreanName = (type: TileType): string => {
-    switch (type) {
-      case "HUNTER":
-        return "사냥꾼";
-      case "LUMBERJACK":
-        return "나무꾼";
-      case "FOX":
-        return "여우";
-      case "BEAR":
-        return "곰";
-      case "DUCK":
-        return "오리";
-      case "PHEASANT":
-        return "꿩";
-      case "TREE":
-        return "나무";
-      case "CABIN":
-        return "오두막";
-      case "EXIT":
-        return "출구";
-      case "EMPTY":
-        return "빈 칸";
-    }
+  const handleCloseRules = () => {
+    localStorage.setItem("hasSeenRules", "true");
+    setShowRules(false);
   };
 
   const resetGame = () => {
@@ -882,7 +304,6 @@ function App() {
             </div>
           )}
 
-          {/* 로그 표시 영역 추가 */}
           <div className="game-logs">
             <h3>게임 로그</h3>
             <ul>
@@ -989,47 +410,6 @@ function App() {
       </div>
     </>
   );
-}
-
-function getTileSymbol(tile: Tile): string {
-  switch (tile.type) {
-    case "HUNTER":
-      switch (tile.direction) {
-        case "UP":
-          return "🏹⬆️";
-        case "DOWN":
-          return "🏹⬇️";
-        case "LEFT":
-          return "🏹⬅️";
-        case "RIGHT":
-          return "🏹➡️";
-        default:
-          return "🏹";
-      }
-    case "LUMBERJACK":
-      return "👨‍🌾";
-    case "FOX":
-      return "🦊";
-    case "BEAR":
-      return "🐻";
-    case "DUCK":
-      return "🦆";
-    case "PHEASANT":
-      return "🐔";
-    case "TREE":
-      return "🌲";
-    case "CABIN":
-      return "🏠";
-    case "EMPTY":
-      return " ";
-    case "EXIT":
-      return "🚪";
-  }
-}
-
-function getRandomDirection(): Direction {
-  const directions: Direction[] = ["UP", "DOWN", "LEFT", "RIGHT"];
-  return directions[Math.floor(Math.random() * directions.length)];
 }
 
 export default App;
