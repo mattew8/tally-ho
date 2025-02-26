@@ -271,6 +271,10 @@ function App() {
     logs: [],
   });
 
+  // 마지막으로 제어된 타일의 위치를 저장하는 state 추가
+  const [lastControlledPosition, setLastControlledPosition] =
+    useState<Position | null>(null);
+
   useEffect(() => {
     if (gameState.isAITurn && !gameState.gameOver) {
       const timer = setTimeout(() => {
@@ -303,9 +307,9 @@ function App() {
 
     if (unrevealedTiles.length > 0) {
       console.log("unrevealedTiles", unrevealedTiles);
-      const randomTile =
-        unrevealedTiles[Math.floor(Math.random() * unrevealedTiles.length)];
-      handleReveal(randomTile.row, randomTile.col);
+      const randomIndex = Math.floor(Math.random() * unrevealedTiles.length);
+      const position = unrevealedTiles[randomIndex];
+      handleReveal(position.row, position.col);
       setGameState((prev) => ({
         ...prev,
         isAITurn: false,
@@ -683,6 +687,9 @@ function App() {
       isAITurn: true,
       logs: [logMessage, ...prev.logs].slice(0, 10), // 최근 10개의 로그만 유지
     }));
+
+    // 타일이 공개되면 마지막 제어 위치 업데이트
+    setLastControlledPosition({ row, col });
   };
 
   const checkAllTilesRevealed = (board: Tile[][]): boolean => {
@@ -779,6 +786,9 @@ function App() {
         isAITurn: !isGameOver && !prev.isAITurn,
         logs: [logMessage, ...prev.logs].slice(0, 10),
       }));
+
+      // 이동이 완료되면 마지막 제어 위치 업데이트
+      setLastControlledPosition(to);
     }
   };
 
@@ -819,6 +829,7 @@ function App() {
       isAITurn: true,
       logs: [],
     });
+    setLastControlledPosition(null);
   };
 
   return (
@@ -957,6 +968,12 @@ function App() {
                   data-huntable={isHuntable}
                   data-movable={isMovable}
                   data-escapable={canEscape}
+                  data-last-controlled={
+                    lastControlledPosition?.row === i &&
+                    lastControlledPosition?.col === j
+                      ? "true"
+                      : "false"
+                  }
                   onClick={() => handleTileClick(i, j)}
                 >
                   {tile.isRevealed
