@@ -16,45 +16,44 @@ import {
 } from "./game";
 
 export function findBestCaptureMove(
-  gameState: GameState
+  gameState: GameState,
+  isAIHuman: boolean
 ): { from: Position; to: Position } | null {
   let bestMove = null;
   let bestScore = -Infinity;
+  const aiTeam = isAIHuman ? "HUMANS" : "ANIMALS";
 
   for (let i = 0; i < BOARD_SIZE; i++) {
     for (let j = 0; j < BOARD_SIZE; j++) {
       const tile = gameState.board[i][j];
 
-      if (tile.owner === "ANIMALS" && tile.isRevealed) {
+      if (tile.owner === aiTeam && tile.isRevealed) {
         for (let di = -BOARD_SIZE; di <= BOARD_SIZE; di++) {
           for (let dj = -BOARD_SIZE; dj <= BOARD_SIZE; dj++) {
             const newRow = i + di;
             const newCol = j + dj;
 
-            if (
-              newRow < 0 ||
-              newRow >= BOARD_SIZE ||
-              newCol < 0 ||
-              newCol >= BOARD_SIZE
-            ) {
-              continue;
-            }
+            if (!isInBoard(newRow, newCol)) continue;
 
             const to = { row: newRow, col: newCol };
             const from = { row: i, col: j };
             const targetTile = gameState.board[to.row][to.col];
 
             if (
-              isValidMove(from, to, gameState.board, "ANIMALS", gameState) &&
+              isValidMove(from, to, gameState.board, aiTeam, gameState) &&
               canCapture(tile, targetTile, from, to)
             ) {
               const score = CAPTURE_SCORES[targetTile.type] || 0;
-              const priorityScore =
-                tile.type === "BEAR" &&
-                (targetTile.type === "HUNTER" ||
-                  targetTile.type === "LUMBERJACK")
+              const priorityScore = isAIHuman
+                ? tile.type === "HUNTER" &&
+                  (targetTile.type === "BEAR" || targetTile.type === "FOX")
                   ? score * 2
-                  : score;
+                  : score
+                : tile.type === "BEAR" &&
+                  (targetTile.type === "HUNTER" ||
+                    targetTile.type === "LUMBERJACK")
+                ? score * 2
+                : score;
 
               if (priorityScore > bestScore) {
                 bestScore = priorityScore;
@@ -82,21 +81,23 @@ export function findUnrevealedTiles(board: Tile[][]): Position[] {
 }
 
 export function findBestMove(
-  gameState: GameState
+  gameState: GameState,
+  isAIHuman: boolean
 ): { from: Position; to: Position } | null {
   let bestMove = null;
   let bestScore = -Infinity;
+  const aiTeam = isAIHuman ? "HUMANS" : "ANIMALS";
 
   for (let i = GAME_AREA_START; i < GAME_AREA_START + GAME_AREA_SIZE; i++) {
     for (let j = GAME_AREA_START; j < GAME_AREA_START + GAME_AREA_SIZE; j++) {
       const tile = gameState.board[i][j];
-      if (tile.owner === "ANIMALS" && tile.isRevealed) {
+      if (tile.owner === aiTeam && tile.isRevealed) {
         const possibleMoves = getPossibleMoves({ row: i, col: j }, tile.type);
 
         for (const to of possibleMoves) {
           const from = { row: i, col: j };
-          if (isValidMove(from, to, gameState.board, "ANIMALS", gameState)) {
-            const score = evaluateBestMove(from, to, gameState);
+          if (isValidMove(from, to, gameState.board, aiTeam, gameState)) {
+            const score = evaluateBestMove(from, to, gameState, isAIHuman);
             if (score > bestScore) {
               bestScore = score;
               bestMove = { from, to };
@@ -159,7 +160,8 @@ function isInBoard(row: number, col: number): boolean {
 function evaluateBestMove(
   from: Position,
   to: Position,
-  gameState: GameState
+  gameState: GameState,
+  isAIHuman: boolean
 ): number {
   const fromTile = gameState.board[from.row][from.col];
   const toTile = gameState.board[to.row][to.col];
@@ -173,16 +175,27 @@ function evaluateBestMove(
     score += 1000;
   }
 
-  const isInHunterRange = checkIfInHunterRange(to, gameState.board);
-  if (isInHunterRange) {
-    score -= 100;
-  }
-
-  const nearbyEnemies = countNearbyEnemies(to, gameState.board);
-  if (fromTile.type === "BEAR") {
-    score += nearbyEnemies * 5;
+  if (isAIHuman) {
+    // AI가 인간팀일 때의 평가 로직
+    const nearbyEnemies = countNearbyEnemies(to, gameState.board, !isAIHuman);
+    if (fromTile.type === "HUNTER") {
+      score += nearbyEnemies * 5; // 사냥꾼은 적이 많은 곳으로
+    } else {
+      score -= nearbyEnemies * 3; // 나무꾼은 적이 적은 곳으로
+    }
   } else {
-    score -= nearbyEnemies * 3;
+    // AI가 동물팀일 때의 평가 로직
+    const isInHunterRange = checkIfInHunterRange(to, gameState.board);
+    if (isInHunterRange) {
+      score -= 100;
+    }
+
+    const nearbyEnemies = countNearbyEnemies(to, gameState.board, !isAIHuman);
+    if (fromTile.type === "BEAR") {
+      score += nearbyEnemies * 5;
+    } else {
+      score -= nearbyEnemies * 3;
+    }
   }
 
   return score;
@@ -218,7 +231,11 @@ function checkIfInHunterRange(pos: Position, board: Tile[][]): boolean {
   return false;
 }
 
-function countNearbyEnemies(pos: Position, board: Tile[][]): number {
+function countNearbyEnemies(
+  pos: Position,
+  board: Tile[][],
+  countHumans: boolean
+): number {
   let count = 0;
   for (let i = -1; i <= 1; i++) {
     for (let j = -1; j <= 1; j++) {
@@ -226,7 +243,10 @@ function countNearbyEnemies(pos: Position, board: Tile[][]): number {
       const newCol = pos.col + j;
       if (isInBoard(newRow, newCol)) {
         const tile = board[newRow][newCol];
-        if (tile.owner === "HUMANS" && tile.isRevealed) {
+        if (
+          tile.owner === (countHumans ? "HUMANS" : "ANIMALS") &&
+          tile.isRevealed
+        ) {
           count++;
         }
       }
@@ -236,18 +256,20 @@ function countNearbyEnemies(pos: Position, board: Tile[][]): number {
 }
 
 export function findBestEscapeMove(
-  gameState: GameState
+  gameState: GameState,
+  isAIHuman: boolean
 ): { from: Position; to: Position } | null {
   if (!gameState.finalPhase) return null;
 
   let bestMove = null;
   let bestScore = -Infinity;
+  const aiTeam = isAIHuman ? "HUMANS" : "ANIMALS";
 
   for (let i = GAME_AREA_START; i < GAME_AREA_START + GAME_AREA_SIZE; i++) {
     for (let j = GAME_AREA_START; j < GAME_AREA_START + GAME_AREA_SIZE; j++) {
       const tile = gameState.board[i][j];
 
-      if (tile.owner === "ANIMALS" && tile.isRevealed) {
+      if (tile.owner === aiTeam && tile.isRevealed) {
         for (const exit of EXIT_LINES) {
           const from = { row: i, col: j };
           const to = { row: exit.row, col: exit.col };
@@ -256,13 +278,15 @@ export function findBestEscapeMove(
 
           const distance = Math.abs(i - exit.row) + Math.abs(j - exit.col);
 
-          if (tile.type === "BEAR" || tile.type === "LUMBERJACK") {
-            if (distance > 1) continue;
-          } else if (["FOX", "DUCK", "PHEASANT"].includes(tile.type)) {
-            if (from.row !== exit.row && from.col !== exit.col) continue;
-          }
+          // 이동 가능 거리 체크
+          const canMove =
+            tile.type === "BEAR" || tile.type === "LUMBERJACK"
+              ? distance <= 1
+              : from.row === exit.row || from.col === exit.col;
 
-          if (isValidMove(from, to, gameState.board, "ANIMALS", gameState)) {
+          if (!canMove) continue;
+
+          if (isValidMove(from, to, gameState.board, aiTeam, gameState)) {
             const escapeScore = ESCAPE_SCORES[tile.type] || 0;
             if (escapeScore > bestScore) {
               bestScore = escapeScore;

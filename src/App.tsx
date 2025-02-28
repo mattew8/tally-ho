@@ -60,13 +60,14 @@ function App() {
   }, [gameState.isAITurn, gameState.gameOver]);
 
   const handleAITurn = () => {
-    const bestAttack = findBestCaptureMove(gameState);
+    const isAIHuman = !gameState.isUserHuman;
+    const bestAttack = findBestCaptureMove(gameState, isAIHuman);
     if (bestAttack) {
       handleMove(bestAttack.from, bestAttack.to);
       return;
     }
 
-    const bestEscape = findBestEscapeMove(gameState);
+    const bestEscape = findBestEscapeMove(gameState, isAIHuman);
     if (bestEscape) {
       handleMove(bestEscape.from, bestEscape.to);
       return;
@@ -81,7 +82,7 @@ function App() {
       return;
     }
 
-    const bestMove = findBestMove(gameState);
+    const bestMove = findBestMove(gameState, isAIHuman);
     if (bestMove) {
       handleMove(bestMove.from, bestMove.to);
       return;
@@ -94,6 +95,7 @@ function App() {
     if (gameState.gameOver || gameState.isAITurn) return;
 
     const tile = gameState.board[row][col];
+    const userTeam = gameState.isUserHuman ? "HUMANS" : "ANIMALS";
 
     if (gameState.selectedTile) {
       if (
@@ -103,7 +105,7 @@ function App() {
           gameState.selectedTile,
           { row, col },
           gameState.board,
-          "HUMANS",
+          userTeam,
           gameState
         )
       ) {
@@ -117,7 +119,7 @@ function App() {
 
     if (tile.isRevealed) {
       if (
-        tile.owner === "HUMANS" ||
+        tile.owner === userTeam ||
         (tile.owner === "NEUTRAL" && ["DUCK", "PHEASANT"].includes(tile.type))
       ) {
         setGameState((prev) => ({ ...prev, selectedTile: { row, col } }));
@@ -159,21 +161,19 @@ function App() {
   };
 
   const handleMove = (from: Position, to: Position) => {
-    if (
-      !isValidMove(
-        from,
-        to,
-        gameState.board,
-        gameState.isAITurn ? "ANIMALS" : "HUMANS",
-        gameState
-      )
-    )
-      return;
+    const currentTeam = gameState.isAITurn
+      ? gameState.isUserHuman
+        ? "ANIMALS"
+        : "HUMANS"
+      : gameState.isUserHuman
+      ? "HUMANS"
+      : "ANIMALS";
+
+    if (!isValidMove(from, to, gameState.board, currentTeam, gameState)) return;
 
     const newBoard = [...gameState.board];
     const movingTile = newBoard[from.row][from.col];
     const targetTile = newBoard[to.row][to.col];
-    const currentTeam = gameState.isAITurn ? "ANIMALS" : "HUMANS";
 
     if (targetTile.type === "EXIT") {
       newBoard[from.row][from.col] = {
@@ -260,11 +260,11 @@ function App() {
         ai: 0,
       };
 
-      finalScores.user += gameState.roundScores.round1.ANIMALS;
-      finalScores.ai += gameState.roundScores.round1.HUMANS;
+      finalScores.user += gameState.roundScores.round1.HUMANS;
+      finalScores.ai += gameState.roundScores.round1.ANIMALS;
 
-      finalScores.user += gameState.roundScores.round2.HUMANS;
-      finalScores.ai += gameState.roundScores.round2.ANIMALS;
+      finalScores.user += gameState.roundScores.round2.ANIMALS;
+      finalScores.ai += gameState.roundScores.round2.HUMANS;
 
       setGameState((prev) => ({
         ...prev,
