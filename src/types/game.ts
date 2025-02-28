@@ -26,21 +26,26 @@ export interface Tile {
   direction?: Direction; // 사냥꾼의 방향
 }
 
+export interface RoundScore {
+  HUMANS: number;
+  ANIMALS: number;
+}
+
 export interface GameState {
   board: Tile[][];
-  scores: {
-    HUMANS: number;
-    ANIMALS: number;
-  };
+  scores: RoundScore;
   selectedTile: Position | null;
   gameOver: boolean;
   finalPhase: boolean;
-  remainingMoves: {
-    HUMANS: number;
-    ANIMALS: number;
-  };
+  remainingMoves: RoundScore;
   isAITurn: boolean;
   logs: string[];
+  round: 1 | 2; // 1라운드 또는 2라운드
+  roundScores: {
+    round1: RoundScore; // 1라운드 점수
+    round2: RoundScore; // 2라운드 점수
+  };
+  isUserHuman: boolean; // 현재 라운드에서 유저가 인간팀인지 여부
 }
 
 // 각 타일 타입별 점수

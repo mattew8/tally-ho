@@ -39,6 +39,12 @@ function App() {
     remainingMoves: { HUMANS: 5, ANIMALS: 5 },
     isAITurn: true,
     logs: [],
+    round: 1,
+    roundScores: {
+      round1: { HUMANS: 0, ANIMALS: 0 },
+      round2: { HUMANS: 0, ANIMALS: 0 },
+    },
+    isUserHuman: true,
   });
 
   const [lastControlledPosition, setLastControlledPosition] =
@@ -138,7 +144,7 @@ function App() {
       );
 
     const logMessage = `${
-      gameState.isAITurn ? "AI" : "플레이어"
+      gameState.isAITurn ? "AI" : "유저"
     }가 ${getTileKoreanName(tile.type)} 타일을 열었습니다.`;
 
     setGameState((prev) => ({
@@ -195,20 +201,18 @@ function App() {
       ) {
         newScores[currentTeam] += ESCAPE_SCORES[movingTile.type] || 0;
         logMessage = `${
-          gameState.isAITurn ? "AI" : "플레이어"
+          gameState.isAITurn ? "AI" : "유저"
         }의 ${getTileKoreanName(movingTile.type)}이(가) 탈출했습니다!`;
       }
     } else if (canCapture(movingTile, targetTile, from, to)) {
       newScores[currentTeam] += CAPTURE_SCORES[targetTile.type] || 0;
-      logMessage = `${
-        gameState.isAITurn ? "AI" : "플레이어"
-      }의 ${getTileKoreanName(movingTile.type)}이(가) ${getTileKoreanName(
-        targetTile.type
-      )}을(를) 잡았습니다!`;
+      logMessage = `${gameState.isAITurn ? "AI" : "유저"}의 ${getTileKoreanName(
+        movingTile.type
+      )}이(가) ${getTileKoreanName(targetTile.type)}을(를) 잡았습니다!`;
     } else {
-      logMessage = `${
-        gameState.isAITurn ? "AI" : "플레이어"
-      }의 ${getTileKoreanName(movingTile.type)}이(가) 이동했습니다.`;
+      logMessage = `${gameState.isAITurn ? "AI" : "유저"}의 ${getTileKoreanName(
+        movingTile.type
+      )}이(가) 이동했습니다.`;
     }
 
     const newRemainingMoves = { ...gameState.remainingMoves };
@@ -216,7 +220,7 @@ function App() {
       newRemainingMoves[currentTeam]--;
     }
 
-    const isGameOver =
+    const isRoundOver =
       gameState.finalPhase &&
       newRemainingMoves.HUMANS === 0 &&
       newRemainingMoves.ANIMALS === 0;
@@ -227,12 +231,71 @@ function App() {
       scores: newScores,
       selectedTile: null,
       remainingMoves: newRemainingMoves,
-      gameOver: isGameOver,
-      isAITurn: !isGameOver && !prev.isAITurn,
+      isAITurn: !isRoundOver && !prev.isAITurn,
       logs: [logMessage, ...prev.logs].slice(0, 10),
     }));
 
     setLastControlledPosition(to);
+
+    if (isRoundOver) {
+      handleRoundEnd();
+    }
+  };
+
+  const handleRoundEnd = () => {
+    const currentRound = gameState.round;
+    const currentScores = { ...gameState.scores };
+
+    setGameState((prev) => ({
+      ...prev,
+      roundScores: {
+        ...prev.roundScores,
+        [`round${currentRound}`]: currentScores,
+      },
+    }));
+
+    if (currentRound === 2) {
+      const finalScores = {
+        user: 0,
+        ai: 0,
+      };
+
+      finalScores.user += gameState.roundScores.round1.ANIMALS;
+      finalScores.ai += gameState.roundScores.round1.HUMANS;
+
+      finalScores.user += gameState.roundScores.round2.HUMANS;
+      finalScores.ai += gameState.roundScores.round2.ANIMALS;
+
+      setGameState((prev) => ({
+        ...prev,
+        gameOver: true,
+        logs: [
+          `게임 종료! 최종 점수 - 유저: ${finalScores.user}, AI: ${finalScores.ai}`,
+          `승자: ${
+            finalScores.user > finalScores.ai
+              ? "유저"
+              : finalScores.user < finalScores.ai
+              ? "AI"
+              : "무승부"
+          }`,
+          ...prev.logs,
+        ],
+      }));
+    } else {
+      setGameState((prev) => ({
+        ...prev,
+        board: createInitialBoard(),
+        scores: { HUMANS: 0, ANIMALS: 0 },
+        selectedTile: null,
+        gameOver: false,
+        finalPhase: false,
+        remainingMoves: { HUMANS: 5, ANIMALS: 5 },
+        isAITurn: false,
+        round: 2,
+        isUserHuman: false,
+        logs: [`라운드 ${currentRound} 종료! 다음 라운드 시작`, ...prev.logs],
+      }));
+    }
   };
 
   const handleCloseRules = () => {
@@ -250,10 +313,16 @@ function App() {
       remainingMoves: { HUMANS: 5, ANIMALS: 5 },
       isAITurn: true,
       logs: [],
+      round: 1,
+      roundScores: {
+        round1: { HUMANS: 0, ANIMALS: 0 },
+        round2: { HUMANS: 0, ANIMALS: 0 },
+      },
+      isUserHuman: false,
     });
     setLastControlledPosition(null);
   };
-
+  console.log(gameState.isUserHuman, gameState.isAITurn);
   return (
     <>
       {showRules && <RulesModal onClose={handleCloseRules} />}
@@ -264,14 +333,28 @@ function App() {
         data-ai-turn={gameState.isAITurn}
       >
         <div className="game-info">
+          <div>라운드: {gameState.round}/2</div>
           <div>
-            현재 차례:{" "}
-            {gameState.isAITurn ? "AI (동물팀)" : "플레이어 (인간팀)"}
+            현재 차례: {gameState.isAITurn ? "AI" : "유저"}(
+            {gameState.isUserHuman
+              ? gameState.isAITurn
+                ? "동물팀"
+                : "인간팀"
+              : gameState.isAITurn
+              ? "인간팀"
+              : "동물팀"}
+            )
           </div>
           <div>
-            점수 - 인간팀: {gameState.scores.HUMANS} | 동물팀:{" "}
+            현재 라운드 점수 - 인간팀: {gameState.scores.HUMANS} | 동물팀:{" "}
             {gameState.scores.ANIMALS}
           </div>
+          {gameState.round === 2 && (
+            <div>
+              이전 라운드 점수 - 인간팀: {gameState.roundScores.round1.HUMANS} |
+              동물팀: {gameState.roundScores.round1.ANIMALS}
+            </div>
+          )}
           <div className="turn-info">
             행동을 선택하세요:
             <br />
