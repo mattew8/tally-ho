@@ -412,13 +412,15 @@ function App() {
                   j === BOARD_SIZE - 1) &&
                 tile.type !== "EXIT";
 
+              const userTeam = gameState.isUserHuman ? "HUMANS" : "ANIMALS";
+
               const isMovable =
                 gameState.selectedTile &&
                 isValidMove(
                   gameState.selectedTile,
                   { row: i, col: j },
                   gameState.board,
-                  "HUMANS",
+                  userTeam,
                   gameState
                 );
 
@@ -441,7 +443,9 @@ function App() {
                 !isMovable &&
                 (isExitLine ||
                   (gameState.isAITurn &&
-                    ["FOX", "BEAR", "TREE"].includes(tile.type)) ||
+                    (gameState.isUserHuman
+                      ? ["HUNTER", "LUMBERJACK"].includes(tile.type)
+                      : ["FOX", "BEAR"].includes(tile.type))) ||
                   ["EMPTY", "CABIN"].includes(tile.type));
 
               const canEscape =
@@ -452,7 +456,7 @@ function App() {
                   gameState.selectedTile,
                   { row: i, col: j },
                   gameState.board,
-                  "HUMANS",
+                  userTeam,
                   gameState
                 );
 
