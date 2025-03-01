@@ -9,14 +9,15 @@
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  padding: 10px;
 }
 
 .modal {
   background-color: #5a3e2b;
   padding: 30px;
   border-radius: 15px;
-  max-width: 800px;
   width: 90%;
+  max-width: 800px;
   max-height: 90vh;
   overflow-y: auto;
   color: #fff;
@@ -67,67 +68,6 @@
   color: #ffd700;
 }
 
-.start-button {
-  display: block;
-  margin: 30px auto 0;
-  padding: 15px 40px;
-  font-size: 1.2em;
-  background-color: #ffd700;
-  border: none;
-  border-radius: 25px;
-  color: #3e2f1d;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-weight: bold;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-}
-
-.start-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 8px rgba(0, 0, 0, 0.3);
-  background-color: #ffed4a;
-}
-
-.start-button:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.close-button {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background-color: rgba(0, 0, 0, 0.2);
-  border: none;
-  color: #fff;
-  font-size: 18px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-}
-
-.close-button:hover {
-  background-color: rgba(0, 0, 0, 0.4);
-  transform: scale(1.1);
-}
-
-.close-button:active {
-  transform: scale(0.95);
-}
-
-.movement-note {
-  margin-top: 15px;
-  font-size: 0.9em;
-  font-style: italic;
-  color: #ffd700;
-  padding-left: 25px;
-}
-
 .team-section {
   margin: 15px 0;
   padding: 10px;
@@ -136,19 +76,6 @@
 }
 
 .team-section h3 {
-  color: #ffd700;
-  font-size: 1.1em;
-  margin-bottom: 8px;
-}
-
-.rules-subsection {
-  margin: 15px 0;
-  padding: 10px;
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-}
-
-.rules-subsection h3 {
   color: #ffd700;
   font-size: 1.1em;
   margin-bottom: 8px;
@@ -173,17 +100,6 @@
   gap: 10px;
 }
 
-.score-section li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.score-section li::before {
-  position: static;
-  margin-right: 5px;
-}
-
 .score-subsection {
   margin: 10px 0;
   padding: 8px;
@@ -195,33 +111,154 @@
   color: #ffd700;
   font-size: 1em;
   margin-bottom: 6px;
-  opacity: 0.9;
 }
 
-.score-subsection ul {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 8px;
+.start-button {
+  display: block;
+  margin: 30px auto 0;
+  padding: 15px 40px;
+  font-size: 1.2em;
+  background-color: #ffd700;
+  border: none;
+  border-radius: 25px;
+  color: #3e2f1d;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: bold;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
 }
 
-/* 모바일 반응형 스타일 */
+.close-button {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.2);
+  border: none;
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+/* 태블릿 반응형 스타일 */
 @media screen and (max-width: 768px) {
   .modal {
-    width: 95%;
     padding: 20px;
-    max-height: 85vh;
+    width: 95%;
   }
 
   .modal-title {
-    font-size: 1.5em;
+    font-size: 1.6em;
   }
 
   .modal-content {
+    margin: 0 auto;
     font-size: 1em;
+  }
+
+  .score-section ul {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
+
+/* 모바일 반응형 스타일 */
+@media screen and (max-width: 480px) {
+  .modal-backdrop {
+    padding: 0;
+    align-items: flex-start;
+  }
+
+  .modal {
+    padding: 15px;
+    width: 100%;
+    height: 100%;
+    max-height: 100vh;
+    border-radius: 0;
+    overflow-y: auto;
+  }
+
+  .modal-title {
+    font-size: 1.3em;
+    margin: 15px 0;
+  }
+
+  .modal-content {
+    font-size: 0.95em;
+  }
+
+  .rules-section {
+    margin: 15px 0;
+    padding: 12px;
+  }
+
+  .rules-section h2 {
+    font-size: 1.2em;
+  }
+
+  .team-section h3,
+  .score-section h3 {
+    font-size: 1.1em;
+  }
+
+  .score-section ul {
+    grid-template-columns: 1fr;
+  }
+
+  .score-subsection {
+    margin: 8px 0;
   }
 
   .start-button {
     padding: 12px 30px;
     font-size: 1.1em;
+    margin: 20px auto;
+    width: 100%;
+    max-width: 280px;
+  }
+
+  .close-button {
+    top: 10px;
+    right: 10px;
+  }
+
+  .rules-section li {
+    padding-left: 20px;
+    margin: 8px 0;
+  }
+}
+
+/* 작은 모바일 화면 대응 */
+@media screen and (max-width: 360px) {
+  .modal {
+    padding: 12px;
+  }
+
+  .modal-title {
+    font-size: 1.2em;
+  }
+
+  .rules-section {
+    padding: 10px;
+    margin: 10px 0;
+  }
+
+  .rules-section h2 {
+    font-size: 1.1em;
+  }
+
+  .team-section,
+  .score-section {
+    padding: 8px;
+  }
+
+  .start-button {
+    padding: 10px 20px;
+    font-size: 1em;
   }
 }

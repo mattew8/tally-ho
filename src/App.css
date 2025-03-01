@@ -861,3 +861,160 @@ html {
     font-size: 0.85em;
   }
 }
+
+/* Modal Base Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background-color: var(--background-color);
+  padding: 2rem;
+  border-radius: 12px;
+  max-width: 90%;
+  width: 500px;
+  position: relative;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.modal-header h2 {
+  font-size: 1.5rem;
+  color: var(--text-color);
+  margin: 0;
+}
+
+.modal-body {
+  margin-bottom: 1.5rem;
+  color: var(--text-color);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.modal-button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  background-color: var(--primary-color);
+  color: white;
+  transition: background-color 0.2s;
+}
+
+.modal-button:hover {
+  background-color: var(--primary-color-dark);
+}
+
+/* Score Display Styles */
+.score-display {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.score-item {
+  text-align: center;
+  padding: 1rem;
+  background-color: var(--tile-background);
+  border-radius: 8px;
+}
+
+.score-item h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.score-value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--primary-color);
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .modal-content {
+    padding: 1.5rem;
+    width: 100%;
+    max-height: 80vh;
+  }
+
+  .modal-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .modal-body {
+    font-size: 0.9rem;
+  }
+
+  .modal-button {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+  }
+
+  .score-display {
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+  }
+
+  .score-item {
+    padding: 0.8rem;
+  }
+
+  .score-item h3 {
+    font-size: 1rem;
+  }
+
+  .score-value {
+    font-size: 1.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-content {
+    padding: 1rem;
+  }
+
+  .modal-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .modal-body {
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+  }
+
+  .modal-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  .score-item {
+    padding: 0.6rem;
+  }
+
+  .score-value {
+    font-size: 1.1rem;
+  }
+}
