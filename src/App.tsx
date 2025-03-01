@@ -23,6 +23,11 @@ import {
   findUnrevealedTiles,
   findBestMove,
 } from "./service/ai";
+import {
+  RoundStartModal,
+  RoundEndModal,
+  GameEndModal,
+} from "./components/GameModals";
 
 function App() {
   const [showRules, setShowRules] = useState(() => {
@@ -49,6 +54,11 @@ function App() {
 
   const [lastControlledPosition, setLastControlledPosition] =
     useState<Position | null>(null);
+
+  const [showRoundStart, setShowRoundStart] = useState(true);
+  const [showRoundEnd, setShowRoundEnd] = useState(false);
+  const [showGameEnd, setShowGameEnd] = useState(false);
+  const [finalScores, setFinalScores] = useState({ user: 0, ai: 0 });
 
   useEffect(() => {
     if (gameState.isAITurn && !gameState.gameOver) {
@@ -262,10 +272,11 @@ function App() {
 
       finalScores.user += gameState.roundScores.round1.HUMANS;
       finalScores.ai += gameState.roundScores.round1.ANIMALS;
-
       finalScores.user += gameState.roundScores.round2.ANIMALS;
       finalScores.ai += gameState.roundScores.round2.HUMANS;
 
+      setFinalScores(finalScores);
+      setShowGameEnd(true);
       setGameState((prev) => ({
         ...prev,
         gameOver: true,
@@ -282,20 +293,26 @@ function App() {
         ],
       }));
     } else {
-      setGameState((prev) => ({
-        ...prev,
-        board: createInitialBoard(),
-        scores: { HUMANS: 0, ANIMALS: 0 },
-        selectedTile: null,
-        gameOver: false,
-        finalPhase: false,
-        remainingMoves: { HUMANS: 5, ANIMALS: 5 },
-        isAITurn: false,
-        round: 2,
-        isUserHuman: false,
-        logs: [`라운드 ${currentRound} 종료! 다음 라운드 시작`, ...prev.logs],
-      }));
+      setShowRoundEnd(true);
     }
+  };
+
+  const handleRoundEndClose = () => {
+    setShowRoundEnd(false);
+    setShowRoundStart(true);
+    setGameState((prev) => ({
+      ...prev,
+      board: createInitialBoard(),
+      scores: { HUMANS: 0, ANIMALS: 0 },
+      selectedTile: null,
+      gameOver: false,
+      finalPhase: false,
+      remainingMoves: { HUMANS: 5, ANIMALS: 5 },
+      isAITurn: false,
+      round: 2,
+      isUserHuman: false,
+      logs: [`라운드 ${prev.round} 종료! 다음 라운드 시작`, ...prev.logs],
+    }));
   };
 
   const handleCloseRules = () => {
@@ -304,6 +321,8 @@ function App() {
   };
 
   const resetGame = () => {
+    setShowGameEnd(false);
+    setShowRoundStart(true);
     setGameState({
       board: createInitialBoard(),
       scores: { HUMANS: 0, ANIMALS: 0 },
@@ -322,10 +341,26 @@ function App() {
     });
     setLastControlledPosition(null);
   };
-  console.log(gameState.isUserHuman, gameState.isAITurn);
+
   return (
     <>
       {showRules && <RulesModal onClose={handleCloseRules} />}
+      {showRoundStart && (
+        <RoundStartModal
+          round={gameState.round}
+          isUserHuman={gameState.isUserHuman}
+          onClose={() => setShowRoundStart(false)}
+        />
+      )}
+      {showRoundEnd && (
+        <RoundEndModal
+          scores={gameState.scores}
+          onClose={handleRoundEndClose}
+        />
+      )}
+      {showGameEnd && (
+        <GameEndModal finalScores={finalScores} onClose={resetGame} />
+      )}
       <div
         className={`game-container ${
           gameState.finalPhase ? "final-phase" : ""
