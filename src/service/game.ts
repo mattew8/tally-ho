@@ -97,53 +97,88 @@ export function isValidMove(
   const fromTile = board[from.row][from.col];
   const toTile = board[to.row][to.col];
 
-  const isExitLine =
-    (to.row === 0 ||
-      to.row === BOARD_SIZE - 1 ||
-      to.col === 0 ||
-      to.col === BOARD_SIZE - 1) &&
-    toTile.type !== "EXIT";
-
-  if (isExitLine) return false;
-  if (!fromTile.isRevealed || !toTile.isRevealed) return false;
-  if (["TREE", "EMPTY", "CABIN"].includes(fromTile.type)) return false;
-  if (
-    fromTile.owner !== currentTeam &&
-    !(
-      fromTile.owner === "NEUTRAL" &&
-      ["DUCK", "PHEASANT"].includes(fromTile.type)
-    )
-  )
+  // 기본 검증
+  if (!fromTile.isRevealed) return false;
+  if (fromTile.type === "EMPTY" || fromTile.type === "CABIN") return false;
+  if (fromTile.owner !== currentTeam && fromTile.owner !== "NEUTRAL")
     return false;
   if (toTile.type === "CABIN") return false;
 
-  if (toTile.type === "EXIT") {
-    if (!gameState.finalPhase) return false;
-    if (currentTeam === "HUMANS") {
-      return ["HUNTER", "LUMBERJACK"].includes(fromTile.type);
-    } else {
-      return ["FOX", "BEAR"].includes(fromTile.type);
-    }
+  // 이동 방향 및 거리 계산
+  const rowDiff = Math.abs(to.row - from.row);
+  const colDiff = Math.abs(to.col - from.col);
+  const isDiagonal = rowDiff > 0 && colDiff > 0;
+
+  // 대각선 이동 불가
+  if (isDiagonal) return false;
+
+  // 게임 영역 검증 (EXIT가 아닌 경우에만)
+  if (toTile.type !== "EXIT") {
+    const isFromInGameArea =
+      from.row >= GAME_AREA_START &&
+      from.row < GAME_AREA_START + GAME_AREA_SIZE &&
+      from.col >= GAME_AREA_START &&
+      from.col < GAME_AREA_START + GAME_AREA_SIZE;
+
+    const isToInGameArea =
+      to.row >= GAME_AREA_START &&
+      to.row < GAME_AREA_START + GAME_AREA_SIZE &&
+      to.col >= GAME_AREA_START &&
+      to.col < GAME_AREA_START + GAME_AREA_SIZE;
+
+    if (!isFromInGameArea || !isToInGameArea) return false;
   }
 
-  if (toTile.type !== "EMPTY" && !canCapture(fromTile, toTile, from, to)) {
+  // 이동 규칙 검증
+  const isShortMover = ["BEAR", "LUMBERJACK"].includes(fromTile.type);
+
+  // 짧은 이동 타일 (곰, 나무꾼)은 한 칸만 이동 가능
+  if (isShortMover && (rowDiff > 1 || colDiff > 1)) {
     return false;
   }
 
-  const rowDiff = to.row - from.row;
-  const colDiff = to.col - from.col;
+  // 긴 이동 타일의 경로 상에 다른 타일이 있는지 확인
+  if (!isShortMover) {
+    const rowStep = rowDiff ? (to.row - from.row) / rowDiff : 0;
+    const colStep = colDiff ? (to.col - from.col) / colDiff : 0;
 
-  if (rowDiff !== 0 && colDiff !== 0) return false;
+    let currentRow = from.row + rowStep;
+    let currentCol = from.col + colStep;
 
-  if (fromTile.type === "BEAR" || fromTile.type === "LUMBERJACK") {
-    return Math.abs(rowDiff) + Math.abs(colDiff) === 1;
+    while (currentRow !== to.row || currentCol !== to.col) {
+      const pathTile = board[currentRow][currentCol];
+      if (pathTile.type !== "EMPTY") {
+        return false;
+      }
+      currentRow += rowStep;
+      currentCol += colStep;
+    }
   }
 
-  if (["HUNTER", "FOX", "DUCK", "PHEASANT"].includes(fromTile.type)) {
-    return checkLinearPath(from, to, board);
+  // EXIT 타일로의 이동 검증
+  if (toTile.type === "EXIT") {
+    if (!gameState.finalPhase) return false;
+
+    // 인간팀은 사냥꾼과 나무꾼만 탈출 가능
+    if (
+      currentTeam === "HUMANS" &&
+      !["HUNTER", "LUMBERJACK"].includes(fromTile.type)
+    ) {
+      return false;
+    }
+    // 동물팀은 곰과 여우만 탈출 가능
+    if (currentTeam === "ANIMALS" && !["BEAR", "FOX"].includes(fromTile.type)) {
+      return false;
+    }
+    return true;
   }
 
-  return false;
+  // 일반적인 이동 규칙
+  if (toTile.type !== "EMPTY") {
+    return canCapture(fromTile, toTile, from, to);
+  }
+
+  return true;
 }
 
 export function canCapture(
