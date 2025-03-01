@@ -350,10 +350,10 @@ function findEscapeMove(gameState: GameState, from: Position): Move | null {
 }
 
 function evaluateBestMove(
-  board: Tile[][],
-  from: Position,
+  _board: Tile[][],
+  _from: Position,
   to: Position,
-  isAIHuman: boolean,
+  _isAIHuman: boolean,
   isFinalPhase: boolean
 ): number {
   let score = 1;
