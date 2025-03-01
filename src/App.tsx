@@ -29,28 +29,30 @@ import {
   GameEndModal,
 } from "./components/GameModals";
 
+const initialGameState: GameState = {
+  board: createInitialBoard(),
+  scores: { HUMANS: 0, ANIMALS: 0 },
+  selectedTile: null,
+  gameOver: false,
+  finalPhase: false,
+  remainingMoves: { HUMANS: 5, ANIMALS: 5 },
+  isAITurn: true,
+  logs: [],
+  round: 1,
+  roundScores: {
+    round1: { HUMANS: 0, ANIMALS: 0 },
+    round2: { HUMANS: 0, ANIMALS: 0 },
+  },
+  isUserHuman: true,
+};
+
 function App() {
   const [showRules, setShowRules] = useState(() => {
     const hasSeenRules = localStorage.getItem("hasSeenRules");
     return !hasSeenRules;
   });
 
-  const [gameState, setGameState] = useState<GameState>({
-    board: createInitialBoard(),
-    scores: { HUMANS: 0, ANIMALS: 0 },
-    selectedTile: null,
-    gameOver: false,
-    finalPhase: false,
-    remainingMoves: { HUMANS: 5, ANIMALS: 5 },
-    isAITurn: true,
-    logs: [],
-    round: 1,
-    roundScores: {
-      round1: { HUMANS: 0, ANIMALS: 0 },
-      round2: { HUMANS: 0, ANIMALS: 0 },
-    },
-    isUserHuman: true,
-  });
+  const [gameState, setGameState] = useState<GameState>(initialGameState);
 
   const [lastControlledPosition, setLastControlledPosition] =
     useState<Position | null>(null);
@@ -255,26 +257,21 @@ function App() {
 
   const handleRoundEnd = () => {
     const currentRound = gameState.round;
-    const currentScores = { ...gameState.scores };
-
-    setGameState((prev) => ({
-      ...prev,
-      roundScores: {
-        ...prev.roundScores,
-        [`round${currentRound}`]: currentScores,
-      },
-    }));
-
     if (currentRound === 2) {
+      const round1Scores = gameState.roundScores.round1;
+      const round2Scores = gameState.scores;
+
       const finalScores = {
         user: 0,
         ai: 0,
       };
 
-      finalScores.user += gameState.roundScores.round1.HUMANS;
-      finalScores.ai += gameState.roundScores.round1.ANIMALS;
-      finalScores.user += gameState.roundScores.round2.ANIMALS;
-      finalScores.ai += gameState.roundScores.round2.HUMANS;
+      // 1라운드: 유저가 인간팀일 때는 HUMANS 점수, 동물팀일 때는 ANIMALS 점수
+      finalScores.user += round1Scores["HUMANS"];
+      finalScores.ai += round1Scores["ANIMALS"];
+      // 2라운드: 유저가 동물팀일 때는 ANIMALS 점수, 인간팀일 때는 HUMANS 점수
+      finalScores.user += round2Scores["ANIMALS"];
+      finalScores.ai += round2Scores["HUMANS"];
 
       setFinalScores(finalScores);
       setShowGameEnd(true);
@@ -294,7 +291,17 @@ function App() {
         ],
       }));
     } else {
+      const currentScores = { ...gameState.scores };
+      // 현재 라운드 점수를 roundScores에 저장
+      const newRoundScores = {
+        ...gameState.roundScores,
+        [`round${currentRound}`]: currentScores,
+      };
       setShowRoundEnd(true);
+      setGameState((prev) => ({
+        ...prev,
+        roundScores: newRoundScores,
+      }));
     }
   };
 
@@ -324,22 +331,7 @@ function App() {
   const resetGame = () => {
     setShowGameEnd(false);
     setShowRoundStart(true);
-    setGameState({
-      board: createInitialBoard(),
-      scores: { HUMANS: 0, ANIMALS: 0 },
-      selectedTile: null,
-      gameOver: false,
-      finalPhase: false,
-      remainingMoves: { HUMANS: 5, ANIMALS: 5 },
-      isAITurn: true,
-      logs: [],
-      round: 1,
-      roundScores: {
-        round1: { HUMANS: 0, ANIMALS: 0 },
-        round2: { HUMANS: 0, ANIMALS: 0 },
-      },
-      isUserHuman: false,
-    });
+    setGameState(initialGameState);
     setLastControlledPosition(null);
   };
 
@@ -434,22 +426,8 @@ function App() {
             {gameState.round === 2 && (
               <div className="info-section">
                 <h3>1라운드 결과</h3>
-                <p>
-                  유저:{" "}
-                  {
-                    gameState.roundScores.round1[
-                      gameState.isUserHuman ? "HUMANS" : "ANIMALS"
-                    ]
-                  }
-                </p>
-                <p>
-                  AI:{" "}
-                  {
-                    gameState.roundScores.round1[
-                      gameState.isUserHuman ? "ANIMALS" : "HUMANS"
-                    ]
-                  }
-                </p>
+                <p>유저: {gameState.roundScores.round1["HUMANS"]}</p>
+                <p>AI: {gameState.roundScores.round1["ANIMALS"]}</p>
               </div>
             )}
 
