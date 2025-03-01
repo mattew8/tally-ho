@@ -301,7 +301,6 @@ html {
 
 /* 마지막 단계 안내 */
 .final-phase {
-  margin-top: 10px;
   padding: 10px;
   background-color: #fff3cd;
   border: 1px solid #ffeeba;
@@ -493,6 +492,7 @@ html {
   cursor: wait !important;
 }
 
+/* 게임 로그 스타일 수정 */
 .game-logs {
   margin-top: 20px;
   padding: 10px;
@@ -504,7 +504,7 @@ html {
 
 .game-logs h3 {
   margin: 0 0 5px 0;
-  color: #333;
+  color: #ffd700;
   font-size: 0.9em;
 }
 
@@ -516,9 +516,7 @@ html {
 
 .game-logs li {
   padding: 3px 0;
-  border-bottom: 1px solid #eee;
   font-size: 0.85em;
-  color: #666;
   line-height: 1.4;
 }
 
@@ -808,4 +806,58 @@ html {
   padding: 10px;
   max-height: 200px;
   overflow-y: auto;
+}
+
+/* 항상 보이는 정보 스타일 */
+.always-visible-info {
+  padding: 10px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+  margin: 10px 0;
+}
+
+.game-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.game-progress p {
+  margin: 0;
+  font-size: 0.9em;
+}
+
+/* 모바일에서 접힌 상태 스타일 수정 */
+@media screen and (max-width: 768px) {
+  .game-info.collapsed .collapsible-content {
+    display: none;
+  }
+
+  /* 접힌 상태에서도 항상 보이는 섹션 */
+  .game-info.collapsed .always-visible-info,
+  .game-info.collapsed .game-logs {
+    display: block;
+  }
+
+  .game-info.collapsed {
+    width: 100%;
+  }
+
+  .game-info.collapsed .info-header {
+    margin-bottom: 0;
+  }
+
+  /* 게임 진행 상황 스타일 조정 */
+  .always-visible-info {
+    margin: 8px 0;
+    padding: 8px;
+  }
+
+  .game-progress {
+    gap: 3px;
+  }
+
+  .game-progress p {
+    font-size: 0.85em;
+  }
 }

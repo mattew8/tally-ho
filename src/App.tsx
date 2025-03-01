@@ -165,7 +165,7 @@ function App() {
       board: newBoard,
       finalPhase: shouldStartFinalPhase,
       isAITurn: true,
-      logs: [logMessage, ...prev.logs].slice(0, 10),
+      logs: [logMessage, ...prev.logs],
     }));
 
     setLastControlledPosition({ row, col });
@@ -243,7 +243,7 @@ function App() {
       selectedTile: null,
       remainingMoves: newRemainingMoves,
       isAITurn: !isRoundOver && !prev.isAITurn,
-      logs: [logMessage, ...prev.logs].slice(0, 10),
+      logs: [logMessage, ...prev.logs],
     }));
 
     setLastControlledPosition(to);
@@ -379,18 +379,36 @@ function App() {
             </button>
           </div>
 
-          <div className="collapsible-content">
-            <div className="info-section">
-              <h3>게임 진행 상황</h3>
+          <div className="always-visible-info">
+            <div className="game-progress">
               <p>라운드: {gameState.round}/2</p>
               <p>
                 현재 차례:{" "}
                 <span className="team-highlight">
                   {gameState.isAITurn ? "AI" : "유저"}
-                </span>
+                </span>{" "}
+                (
+                {gameState.isUserHuman
+                  ? gameState.isAITurn
+                    ? "동물팀"
+                    : "인간팀"
+                  : gameState.isAITurn
+                  ? "인간팀"
+                  : "동물팀"}
+                )
               </p>
-            </div>
 
+              {gameState.finalPhase && (
+                <div className="remaining-moves">
+                  <p className="phase-title">🎯 마지막 단계: 탈출!</p>
+                  <p>남은 이동 - 인간팀: {gameState.remainingMoves.HUMANS}</p>
+                  <p>남은 이동 - 동물팀: {gameState.remainingMoves.ANIMALS}</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="collapsible-content">
             <div className="info-section">
               <h3>진영 정보</h3>
               <p>
@@ -435,14 +453,6 @@ function App() {
               </div>
             )}
 
-            {gameState.finalPhase && (
-              <div className="info-section">
-                <h3>남은 이동 횟수</h3>
-                <p>인간팀: {gameState.remainingMoves.HUMANS}</p>
-                <p>동물팀: {gameState.remainingMoves.ANIMALS}</p>
-              </div>
-            )}
-
             <button className="rules-button" onClick={() => setShowRules(true)}>
               게임 설명서 보기
             </button>
@@ -452,7 +462,12 @@ function App() {
             <h3>게임 로그</h3>
             <ul>
               {gameState.logs.map((log, index) => (
-                <li key={index}>{log}</li>
+                <li key={index}>
+                  <span className="log-content">{log}</span>
+                  <span className="log-number">
+                    {` #${gameState.logs.length - index}`}
+                  </span>
+                </li>
               ))}
             </ul>
           </div>
