@@ -59,6 +59,7 @@ function App() {
   const [showRoundEnd, setShowRoundEnd] = useState(false);
   const [showGameEnd, setShowGameEnd] = useState(false);
   const [finalScores, setFinalScores] = useState({ user: 0, ai: 0 });
+  const [isInfoCollapsed, setIsInfoCollapsed] = useState(true);
 
   useEffect(() => {
     if (gameState.isAITurn && !gameState.gameOver) {
@@ -367,60 +368,85 @@ function App() {
         }`}
         data-ai-turn={gameState.isAITurn}
       >
-        <div className="game-info">
-          <div>라운드: {gameState.round}/2</div>
-          <div>
-            현재 차례: {gameState.isAITurn ? "AI" : "유저"}(
-            {gameState.isUserHuman
-              ? gameState.isAITurn
-                ? "동물팀"
-                : "인간팀"
-              : gameState.isAITurn
-              ? "인간팀"
-              : "동물팀"}
-            )
+        <div className={`game-info ${isInfoCollapsed ? "collapsed" : ""}`}>
+          <div className="info-header">
+            <h2>게임 정보</h2>
+            <button
+              className="collapse-button"
+              onClick={() => setIsInfoCollapsed(!isInfoCollapsed)}
+            >
+              {isInfoCollapsed ? "펼치기" : "접기"}
+            </button>
           </div>
-          <div>
-            현재 라운드 점수 - 인간팀: {gameState.scores.HUMANS} | 동물팀:{" "}
-            {gameState.scores.ANIMALS}
+
+          <div className="collapsible-content">
+            <div className="info-section">
+              <h3>게임 진행 상황</h3>
+              <p>라운드: {gameState.round}/2</p>
+              <p>
+                현재 차례:{" "}
+                <span className="team-highlight">
+                  {gameState.isAITurn ? "AI" : "유저"}
+                </span>
+              </p>
+            </div>
+
+            <div className="info-section">
+              <h3>진영 정보</h3>
+              <p>
+                인간팀:{" "}
+                <span className="team-highlight">
+                  {gameState.isUserHuman ? "유저" : "AI"}
+                </span>
+              </p>
+              <p>
+                동물팀:{" "}
+                <span className="team-highlight">
+                  {gameState.isUserHuman ? "AI" : "유저"}
+                </span>
+              </p>
+            </div>
+
+            <div className="info-section">
+              <h3>현재 라운드 점수</h3>
+              <p>인간팀: {gameState.scores.HUMANS}</p>
+              <p>동물팀: {gameState.scores.ANIMALS}</p>
+            </div>
+
+            {gameState.round === 2 && (
+              <div className="info-section">
+                <h3>1라운드 결과</h3>
+                <p>
+                  유저:{" "}
+                  {
+                    gameState.roundScores.round1[
+                      gameState.isUserHuman ? "HUMANS" : "ANIMALS"
+                    ]
+                  }
+                </p>
+                <p>
+                  AI:{" "}
+                  {
+                    gameState.roundScores.round1[
+                      gameState.isUserHuman ? "ANIMALS" : "HUMANS"
+                    ]
+                  }
+                </p>
+              </div>
+            )}
+
+            {gameState.finalPhase && (
+              <div className="info-section">
+                <h3>남은 이동 횟수</h3>
+                <p>인간팀: {gameState.remainingMoves.HUMANS}</p>
+                <p>동물팀: {gameState.remainingMoves.ANIMALS}</p>
+              </div>
+            )}
+
+            <button className="rules-button" onClick={() => setShowRules(true)}>
+              게임 설명서 보기
+            </button>
           </div>
-          {gameState.round === 2 && (
-            <div>
-              이전 라운드 점수 - 인간팀: {gameState.roundScores.round1.HUMANS} |
-              동물팀: {gameState.roundScores.round1.ANIMALS}
-            </div>
-          )}
-          <div className="turn-info">
-            행동을 선택하세요:
-            <br />
-            1. 타일 열기 (뒤집힌 타일 클릭)
-            <br />
-            2. 타일 이동하기 (공개된 타일 선택 후 목적지 클릭)
-          </div>
-          <button className="rules-button" onClick={() => setShowRules(true)}>
-            게임 설명서 보기
-          </button>
-          {gameState.gameOver && (
-            <div className="game-over">
-              게임 종료! 승자:{" "}
-              {gameState.scores.HUMANS > gameState.scores.ANIMALS
-                ? "인간팀"
-                : gameState.scores.HUMANS < gameState.scores.ANIMALS
-                ? "동물팀"
-                : "무승부"}
-              <button className="restart-button" onClick={resetGame}>
-                한판 더!
-              </button>
-            </div>
-          )}
-          {gameState.finalPhase && (
-            <div className="final-phase-message">
-              마지막 단계: 탈출 가능!
-              <br />
-              남은 이동 횟수 - 인간팀: {gameState.remainingMoves.HUMANS} |
-              동물팀: {gameState.remainingMoves.ANIMALS}
-            </div>
-          )}
 
           <div className="game-logs">
             <h3>게임 로그</h3>
@@ -431,6 +457,7 @@ function App() {
             </ul>
           </div>
         </div>
+
         <div className="game-board">
           {gameState.board.map((row, i) =>
             row.map((tile, j) => {

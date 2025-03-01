@@ -1,18 +1,26 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 /* 전체 게임 컨테이너 */
 .game-container {
-  position: absolute; /* fixed body 내에서 스크롤 가능하도록 */
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex-direction: row-reverse;
+  justify-content: center;
+  align-items: flex-start;
   padding: 20px;
-  background-color: #3e2f1d; /* 전체 배경을 나무 느낌으로 변경 */
-  box-sizing: border-box; /* padding이 height에 포함되도록 설정 */
-  overflow-y: auto; /* 컨테이너 내부 스크롤 활성화 */
-  overflow-x: hidden; /* 수평 스크롤은 계속 막음 */
+  background-color: #3e2f1d;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+  gap: 20px;
 }
 
 /* body와 html에 대한 스타일도 추가 */
@@ -28,19 +36,36 @@ html {
 
 /* 게임 정보 */
 .game-info {
-  margin-bottom: 20px;
-  font-size: 1.2em;
-  color: #fff;
+  width: 300px;
+  padding: 20px;
   background-color: #5a3e2b;
-  padding: 15px;
   border-radius: 8px;
   box-shadow: 0 3px 5px rgba(0, 0, 0, 0.3);
-  width: 100%;
-  max-width: 600px;
-  box-sizing: border-box;
+  color: #fff;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  gap: 15px;
+  height: fit-content;
+  position: sticky;
+  top: 20px;
+}
+
+/* 게임 정보 섹션 스타일 */
+.info-section {
+  padding: 10px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+}
+
+.info-section h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.1em;
+  color: #ffd700;
+}
+
+.info-section p {
+  margin: 5px 0;
+  font-size: 0.9em;
 }
 
 /* 게임 보드 */
@@ -53,8 +78,7 @@ html {
   padding: 5px;
   border-radius: 8px;
   box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
-  transition: transform 0.5s ease-in-out;
-  transform: translateY(0);
+  margin-left: 20px;
 }
 
 /* 마지막 단계에서 게임판 위치 조정 */
@@ -229,7 +253,7 @@ html {
   transition: opacity 1s ease-in-out, transform 1s ease-in-out;
 }
 
-/* 마지막 페이즈에서 탈출구 표시 */
+/* 마지막 단계에서 탈출구 표시 */
 .final-phase .tile[data-type="EXIT"] {
   opacity: 1;
   transform: scale(1);
@@ -503,109 +527,106 @@ html {
 }
 
 /* 모바일 반응형 스타일 */
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 920px) {
   .game-container {
-    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 15px;
   }
 
   .game-info {
-    font-size: 1em;
-    padding: 10px;
-    margin-bottom: 10px;
+    width: 100%;
+    max-width: calc(9 * 40px + 20px); /* 게임 보드 크기에 맞춤 */
+    position: relative;
+    top: 0;
+    margin: 0;
+    padding: 15px;
   }
 
   .game-board {
-    grid-template-columns: repeat(9, minmax(40px, 1fr));
-    grid-template-rows: repeat(9, minmax(40px, 1fr));
-    gap: 2px;
-    padding: 5px;
+    margin: 0;
+    grid-template-columns: repeat(9, 40px); /* 모바일에서 더 작은 크기 */
+    grid-template-rows: repeat(9, 40px);
+    padding: 4px;
+    gap: 1px;
   }
 
+  /* 타일 크기 조정 */
   .tile {
-    width: auto;
-    height: auto;
-    aspect-ratio: 1;
-    font-size: 1.4em;
-  }
-
-  .game-logs {
-    height: 60px;
-    font-size: 0.9em;
-  }
-
-  .final-phase-message {
-    font-size: 0.9em;
-  }
-
-  .rules-button {
-    padding: 6px 12px;
-    font-size: 0.9em;
-  }
-
-  .tile[data-type="HUNTER"].revealed {
-    font-size: 0.7em;
-  }
-}
-
-/* 더 작은 화면을 위한 추가 스타일 */
-@media screen and (max-width: 480px) {
-  .game-board {
-    grid-template-columns: repeat(9, minmax(35px, 1fr));
-    grid-template-rows: repeat(9, minmax(35px, 1fr));
-  }
-
-  .tile {
+    width: 40px;
+    height: 40px;
     font-size: 1.2em;
   }
 
-  .game-info {
+  /* info 섹션 간격 조정 */
+  .info-section {
+    padding: 8px;
+    margin-bottom: 5px;
+  }
+
+  .info-section h3 {
+    font-size: 1em;
+    margin-bottom: 5px;
+  }
+
+  .info-section p {
     font-size: 0.9em;
+    margin: 3px 0;
   }
 
-  /* 모바일에서 툴팁 위치 조정 */
-  .tile[data-huntable="true"]:hover::after,
-  .tile[data-movable="true"]:not([data-huntable="true"]):hover::after,
-  .tile[data-escapable="true"]:hover::after,
-  .tile:not(.revealed):not([data-disabled="true"]):hover::after {
-    bottom: auto;
-    top: 100%;
-    font-size: 12px;
-    padding: 3px 6px;
+  /* 로그 섹션 조정 */
+  .game-logs {
+    max-height: 150px;
+    padding: 8px;
   }
 
-  /* 모바일에서 선택된 타일의 크기 조정 */
-  .tile.selected {
-    transform: scale(1.05);
+  .game-logs h3 {
+    font-size: 1em;
   }
 
-  .tile[data-type="HUNTER"].revealed {
-    font-size: 0.6em;
+  .game-logs li {
+    font-size: 0.8em;
+    padding: 3px 0;
   }
 }
 
-/* 가로 모드를 위한 스타일 */
-@media screen and (max-height: 600px) and (orientation: landscape) {
-  .game-container {
-    flex-direction: row;
-    justify-content: space-around;
-    align-items: flex-start;
-    padding: 5px;
+/* 더 작은 화면 대응 */
+@media screen and (max-width: 400px) {
+  .game-board {
+    grid-template-columns: repeat(9, 35px);
+    grid-template-rows: repeat(9, 35px);
+  }
+
+  .tile {
+    width: 35px;
+    height: 35px;
+    font-size: 1em;
   }
 
   .game-info {
-    width: 30%;
-    margin-right: 10px;
-    font-size: 0.8em;
+    max-width: calc(9 * 35px + 10px);
+    padding: 10px;
+  }
+}
+
+/* 가로 모드 대응 */
+@media screen and (max-height: 600px) and (orientation: landscape) {
+  .game-container {
+    padding: 5px;
+    gap: 10px;
   }
 
   .game-board {
-    width: 65%;
-    grid-template-columns: repeat(9, minmax(35px, 1fr));
-    grid-template-rows: repeat(9, minmax(35px, 1fr));
+    grid-template-columns: repeat(9, 35px);
+    grid-template-rows: repeat(9, 35px);
   }
 
-  .game-logs {
-    height: 50px;
+  .game-info {
+    max-width: calc(9 * 35px + 10px);
+    padding: 10px;
   }
 }
 
@@ -705,4 +726,86 @@ html {
 
 .tile:not(.revealed)[data-last-controlled="true"] {
   animation: none;
+}
+
+/* 게임 정보 헤더 */
+.info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.info-header h2 {
+  margin: 0;
+  font-size: 1.2em;
+  color: #ffd700;
+}
+
+.collapse-button {
+  background: transparent;
+  border: 1px solid #ffd700;
+  color: #ffd700;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.collapse-button:hover {
+  background: rgba(255, 215, 0, 0.1);
+}
+
+/* 접을 수 있는 컨텐츠 */
+.collapsible-content {
+  transition: max-height 0.3s ease-out;
+  overflow: hidden;
+}
+
+/* 모바일 대응 */
+@media screen and (max-width: 920px) {
+  .game-container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .game-board {
+    margin-right: 0;
+    margin-bottom: 20px;
+  }
+
+  .game-info.collapsed .collapsible-content {
+    display: none;
+  }
+
+  .game-info.collapsed {
+    width: 100%;
+  }
+
+  .game-info.collapsed .info-header {
+    margin-bottom: 10px;
+  }
+
+  /* 로그는 항상 표시 */
+  .game-info.collapsed .game-logs {
+    display: block;
+  }
+}
+
+/* 데스크톱에서는 접기 버튼 숨기기 */
+@media screen and (min-width: 920px) {
+  .collapse-button {
+    display: none;
+  }
+}
+
+/* 게임 로그 스타일 수정 */
+.game-logs {
+  margin-top: auto; /* 하단에 고정 */
+  background-color: rgba(0, 0, 0, 0.3);
+  border-radius: 5px;
+  padding: 10px;
+  max-height: 200px;
+  overflow-y: auto;
 }
