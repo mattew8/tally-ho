@@ -360,7 +360,22 @@ function App() {
           </div>
 
           <div className="always-visible-info">
-            <div className="game-progress">
+            <div className="info-section">
+              <h3>현재 라운드 점수</h3>
+              <p>
+                인간팀({gameState.isUserHuman ? "유저" : "AI"}):{" "}
+                {gameState.scores.HUMANS}
+              </p>
+              <p>
+                동물팀({gameState.isUserHuman ? "AI" : "유저"}):{" "}
+                {gameState.scores.ANIMALS}
+              </p>
+            </div>
+          </div>
+
+          <div className="collapsible-content">
+            <div className="info-section game-progress">
+              <h3>게임 진행</h3>
               <p>라운드: {gameState.round}/2</p>
               <p>
                 현재 차례:{" "}
@@ -386,9 +401,7 @@ function App() {
                 </div>
               )}
             </div>
-          </div>
 
-          <div className="collapsible-content">
             <div className="info-section">
               <h3>진영 정보</h3>
               <p>
@@ -405,17 +418,17 @@ function App() {
               </p>
             </div>
 
-            <div className="info-section">
-              <h3>현재 라운드 점수</h3>
-              <p>인간팀: {gameState.scores.HUMANS}</p>
-              <p>동물팀: {gameState.scores.ANIMALS}</p>
-            </div>
-
             {gameState.round === 2 && (
               <div className="info-section">
                 <h3>1라운드 결과</h3>
-                <p>유저: {gameState.roundScores.round1["HUMANS"]}</p>
-                <p>AI: {gameState.roundScores.round1["ANIMALS"]}</p>
+                <p>
+                  인간팀({gameState.isUserHuman ? "유저" : "AI"}):{" "}
+                  {gameState.roundScores.round1.HUMANS}
+                </p>
+                <p>
+                  동물팀({gameState.isUserHuman ? "AI" : "유저"}):{" "}
+                  {gameState.roundScores.round1.ANIMALS}
+                </p>
               </div>
             )}
 
