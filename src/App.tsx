@@ -252,13 +252,25 @@ function App() {
     setLastControlledPosition(to);
 
     if (isRoundOver) {
-      const round1Scores = gameState.roundScores.round1;
-      const round2Scores = newScores;
-      handleRoundEnd(round1Scores, round2Scores);
+      const round = gameState.round;
+      if (round === 1) {
+        setGameState((prev) => ({
+          ...prev,
+          roundScores: {
+            ...prev.roundScores,
+            round1: newScores,
+          },
+        }));
+        setShowRoundEnd(true);
+      } else {
+        const round1Scores = gameState.roundScores.round1;
+        const round2Scores = newScores;
+        handleGameEnd(round1Scores, round2Scores);
+      }
     }
   };
 
-  const handleRoundEnd = (
+  const handleGameEnd = (
     round1Scores: RoundScore,
     round2Scores: RoundScore
   ) => {
@@ -363,12 +375,16 @@ function App() {
             <div className="info-section">
               <h3>현재 라운드 점수</h3>
               <p>
-                인간팀({gameState.isUserHuman ? "유저" : "AI"}):{" "}
-                {gameState.scores.HUMANS}
+                {gameState.isUserHuman ? "유저(인간팀 🏹)" : "유저(동물팀 🦊)"}:{" "}
+                {gameState.isUserHuman
+                  ? gameState.scores.HUMANS
+                  : gameState.scores.ANIMALS}
               </p>
               <p>
-                동물팀({gameState.isUserHuman ? "AI" : "유저"}):{" "}
-                {gameState.scores.ANIMALS}
+                {gameState.isUserHuman ? "AI(동물팀 🦊)" : "AI(인간팀 🏹)"}:{" "}
+                {gameState.isUserHuman
+                  ? gameState.scores.ANIMALS
+                  : gameState.scores.HUMANS}
               </p>
             </div>
           </div>
@@ -385,50 +401,38 @@ function App() {
                 (
                 {gameState.isUserHuman
                   ? gameState.isAITurn
-                    ? "동물팀"
-                    : "인간팀"
+                    ? "동물팀 🦊"
+                    : "인간팀 🏹"
                   : gameState.isAITurn
-                  ? "인간팀"
-                  : "동물팀"}
+                  ? "인간팀 🏹"
+                  : "동물팀 🦊"}
                 )
               </p>
 
               {gameState.finalPhase && (
                 <div className="remaining-moves">
                   <p className="phase-title">🎯 마지막 단계: 탈출!</p>
-                  <p>남은 이동 - 인간팀: {gameState.remainingMoves.HUMANS}</p>
-                  <p>남은 이동 - 동물팀: {gameState.remainingMoves.ANIMALS}</p>
+                  <p>
+                    남은 이동 - 인간팀 🏹: {gameState.remainingMoves.HUMANS}
+                  </p>
+                  <p>
+                    남은 이동 - 동물팀 🦊: {gameState.remainingMoves.ANIMALS}
+                  </p>
                 </div>
               )}
             </div>
 
             <div className="info-section">
               <h3>진영 정보</h3>
-              <p>
-                인간팀:{" "}
-                <span className="team-highlight">
-                  {gameState.isUserHuman ? "유저" : "AI"}
-                </span>
-              </p>
-              <p>
-                동물팀:{" "}
-                <span className="team-highlight">
-                  {gameState.isUserHuman ? "AI" : "유저"}
-                </span>
-              </p>
+              <p>인간팀 🏹 : {gameState.isUserHuman ? "유저" : "AI"}</p>
+              <p>동물팀 🦊 : {gameState.isUserHuman ? "AI" : "유저"}</p>
             </div>
 
             {gameState.round === 2 && (
               <div className="info-section">
                 <h3>1라운드 결과</h3>
-                <p>
-                  인간팀({gameState.isUserHuman ? "유저" : "AI"}):{" "}
-                  {gameState.roundScores.round1.HUMANS}
-                </p>
-                <p>
-                  동물팀({gameState.isUserHuman ? "AI" : "유저"}):{" "}
-                  {gameState.roundScores.round1.ANIMALS}
-                </p>
+                <p>유저(인간팀 🏹): {gameState.roundScores.round1.HUMANS}</p>
+                <p>AI(동물팀 🦊): {gameState.roundScores.round1.ANIMALS}</p>
               </div>
             )}
 
