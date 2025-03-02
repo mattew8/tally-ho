@@ -5,6 +5,7 @@ import {
   Position,
   CAPTURE_SCORES,
   ESCAPE_SCORES,
+  RoundScore,
 } from "./types/game";
 import { RulesModal } from "./components/RulesModal";
 import {
@@ -251,58 +252,45 @@ function App() {
     setLastControlledPosition(to);
 
     if (isRoundOver) {
-      handleRoundEnd();
+      const round1Scores = gameState.roundScores.round1;
+      const round2Scores = newScores;
+      handleRoundEnd(round1Scores, round2Scores);
     }
   };
 
-  const handleRoundEnd = () => {
-    const currentRound = gameState.round;
-    if (currentRound === 2) {
-      const round1Scores = gameState.roundScores.round1;
-      const round2Scores = gameState.scores;
+  const handleRoundEnd = (
+    round1Scores: RoundScore,
+    round2Scores: RoundScore
+  ) => {
+    const finalScores = {
+      user: 0,
+      ai: 0,
+    };
 
-      const finalScores = {
-        user: 0,
-        ai: 0,
-      };
+    // 1라운드: 유저가 인간팀일 때는 HUMANS 점수, 동물팀일 때는 ANIMALS 점수
+    finalScores.user += round1Scores["HUMANS"];
+    finalScores.ai += round1Scores["ANIMALS"];
+    // 2라운드: 유저가 동물팀일 때는 ANIMALS 점수, 인간팀일 때는 HUMANS 점수
+    finalScores.user += round2Scores["ANIMALS"];
+    finalScores.ai += round2Scores["HUMANS"];
 
-      // 1라운드: 유저가 인간팀일 때는 HUMANS 점수, 동물팀일 때는 ANIMALS 점수
-      finalScores.user += round1Scores["HUMANS"];
-      finalScores.ai += round1Scores["ANIMALS"];
-      // 2라운드: 유저가 동물팀일 때는 ANIMALS 점수, 인간팀일 때는 HUMANS 점수
-      finalScores.user += round2Scores["ANIMALS"];
-      finalScores.ai += round2Scores["HUMANS"];
-
-      setFinalScores(finalScores);
-      setShowGameEnd(true);
-      setGameState((prev) => ({
-        ...prev,
-        gameOver: true,
-        logs: [
-          `게임 종료! 최종 점수 - 유저: ${finalScores.user}, AI: ${finalScores.ai}`,
-          `승자: ${
-            finalScores.user > finalScores.ai
-              ? "유저"
-              : finalScores.user < finalScores.ai
-              ? "AI"
-              : "무승부"
-          }`,
-          ...prev.logs,
-        ],
-      }));
-    } else {
-      const currentScores = { ...gameState.scores };
-      // 현재 라운드 점수를 roundScores에 저장
-      const newRoundScores = {
-        ...gameState.roundScores,
-        [`round${currentRound}`]: currentScores,
-      };
-      setShowRoundEnd(true);
-      setGameState((prev) => ({
-        ...prev,
-        roundScores: newRoundScores,
-      }));
-    }
+    setFinalScores(finalScores);
+    setShowGameEnd(true);
+    setGameState((prev) => ({
+      ...prev,
+      gameOver: true,
+      logs: [
+        `게임 종료! 최종 점수 - 유저: ${finalScores.user}, AI: ${finalScores.ai}`,
+        `승자: ${
+          finalScores.user > finalScores.ai
+            ? "유저"
+            : finalScores.user < finalScores.ai
+            ? "AI"
+            : "무승부"
+        }`,
+        ...prev.logs,
+      ],
+    }));
   };
 
   const handleRoundEndClose = () => {
