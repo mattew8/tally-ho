@@ -331,7 +331,7 @@ function App() {
   const resetGame = () => {
     setShowGameEnd(false);
     setShowRoundStart(true);
-    setGameState(initialGameState);
+    setGameState({ ...initialGameState, board: createInitialBoard() });
     setLastControlledPosition(null);
   };
 
