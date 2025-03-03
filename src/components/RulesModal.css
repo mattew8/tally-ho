@@ -1,57 +1,147 @@
-.modal-backdrop {
+/* 기존 스타일을 모두 제거하고 새로운 스타일 적용 */
+.rules-modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.7);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  padding: 10px;
 }
 
-.modal {
-  background-color: #5a3e2b;
-  padding: 30px;
-  border-radius: 15px;
+.rules-modal {
+  background: #5a3e2b;
   width: 90%;
   max-width: 800px;
-  max-height: 90vh;
-  overflow-y: auto;
-  color: #fff;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+  height: 80vh;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
   position: relative;
+  overflow: hidden;
+  border: 3px solid #8b7355;
 }
 
-.modal-title {
-  font-size: 2em;
-  margin-bottom: 20px;
+.rules-modal-header {
+  background: #8b7355;
+  padding: 20px;
   text-align: center;
-  color: #ffd700;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  border-bottom: 2px solid #6b4f37;
 }
 
-.modal-content {
-  font-size: 1.1em;
-  line-height: 1.6;
+.rules-modal-title {
+  color: #ffd700;
+  font-size: 2em;
+  margin: 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  font-family: "Georgia", serif;
+}
+
+.rules-modal-content {
+  flex: 1;
+  padding: 30px;
+  overflow-y: auto;
+  position: relative;
+  background: #5a3e2b;
+}
+
+.page-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 400px;
+  position: relative;
+  margin: 20px 0;
+  background: #6b4f37;
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.3);
+}
+
+.page-content {
+  flex: 1;
+  padding: 0 20px;
+  transition: transform 0.3s ease;
+  color: #fff;
+}
+
+.page-nav-button {
+  background: #8b7355;
+  border: 2px solid #ffd700;
+  color: #ffd700;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.8em;
+  transition: all 0.3s ease;
+  z-index: 2;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.page-nav-button:hover:not(:disabled) {
+  background: #ffd700;
+  color: #5a3e2b;
+  transform: scale(1.1);
+}
+
+.page-nav-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.page-indicator {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px 0;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 20px;
+}
+
+.page-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 215, 0, 0.3);
+  transition: all 0.3s ease;
+  border: 2px solid #ffd700;
+}
+
+.page-dot.active {
+  background: #ffd700;
+  transform: scale(1.2);
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
 }
 
 .rules-section {
-  margin: 20px 0;
-  padding: 15px;
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
 }
 
 .rules-section h2 {
   color: #ffd700;
-  margin-bottom: 10px;
+  font-size: 1.5em;
+  margin-bottom: 15px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.rules-section p {
+  line-height: 1.6;
+  margin-bottom: 15px;
 }
 
 .rules-section ul {
-  list-style-type: none;
+  list-style: none;
   padding-left: 0;
 }
 
@@ -59,6 +149,7 @@
   margin: 10px 0;
   padding-left: 25px;
   position: relative;
+  line-height: 1.5;
 }
 
 .rules-section li::before {
@@ -69,196 +160,114 @@
 }
 
 .team-section {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 15px;
+  border-radius: 8px;
   margin: 15px 0;
-  padding: 10px;
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
+  border: 1px solid rgba(255, 215, 0, 0.2);
 }
 
 .team-section h3 {
   color: #ffd700;
-  font-size: 1.1em;
-  margin-bottom: 8px;
+  font-size: 1.2em;
+  margin-bottom: 10px;
 }
 
 .score-section {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 15px;
+  border-radius: 8px;
   margin: 15px 0;
-  padding: 10px;
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-}
-
-.score-section h3 {
-  color: #ffd700;
-  font-size: 1.1em;
-  margin-bottom: 8px;
-}
-
-.score-section ul {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 10px;
+  border: 1px solid rgba(255, 215, 0, 0.2);
 }
 
 .score-subsection {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 12px;
+  border-radius: 6px;
   margin: 10px 0;
-  padding: 8px;
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 4px;
 }
 
 .score-subsection h4 {
   color: #ffd700;
-  font-size: 1em;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .start-button {
-  display: block;
-  margin: 30px auto 0;
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   padding: 15px 40px;
   font-size: 1.2em;
-  background-color: #ffd700;
+  background: #ffd700;
   border: none;
   border-radius: 25px;
-  color: #3e2f1d;
+  color: #5a3e2b;
   cursor: pointer;
   transition: all 0.3s ease;
   font-weight: bold;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.start-button:hover {
+  background: #ffed4a;
+  transform: translateX(-50%) scale(1.05);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
 }
 
 .close-button {
   position: absolute;
-  top: 15px;
-  right: 15px;
-  width: 30px;
-  height: 30px;
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background-color: rgba(0, 0, 0, 0.2);
-  border: none;
-  color: #fff;
-  font-size: 18px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid #ffd700;
+  color: #ffd700;
+  font-size: 20px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s ease;
+  z-index: 10;
 }
 
-/* 태블릿 반응형 스타일 */
+.close-button:hover {
+  background: #ffd700;
+  color: #5a3e2b;
+  transform: scale(1.1);
+}
+
+/* 모바일 대응 */
 @media screen and (max-width: 768px) {
-  .modal {
-    padding: 20px;
+  .rules-modal {
+    height: 90vh;
     width: 95%;
   }
 
-  .modal-title {
-    font-size: 1.6em;
+  .rules-modal-title {
+    font-size: 1.5em;
   }
 
-  .modal-content {
-    margin: 0 auto;
-    font-size: 1em;
-  }
-
-  .score-section ul {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  }
-}
-
-/* 모바일 반응형 스타일 */
-@media screen and (max-width: 480px) {
-  .modal-backdrop {
-    padding: 0;
-    align-items: flex-start;
-  }
-
-  .modal {
+  .page-container {
+    min-height: 300px;
     padding: 15px;
-    width: 100%;
-    height: 100%;
-    max-height: 100vh;
-    border-radius: 0;
-    overflow-y: auto;
   }
 
-  .modal-title {
+  .page-nav-button {
+    width: 40px;
+    height: 40px;
+    font-size: 1.5em;
+  }
+
+  .rules-section {
+    padding: 15px;
+  }
+
+  .rules-section h2 {
     font-size: 1.3em;
-    margin: 15px 0;
-  }
-
-  .modal-content {
-    font-size: 0.95em;
-  }
-
-  .rules-section {
-    margin: 15px 0;
-    padding: 12px;
-  }
-
-  .rules-section h2 {
-    font-size: 1.2em;
-  }
-
-  .team-section h3,
-  .score-section h3 {
-    font-size: 1.1em;
-  }
-
-  .score-section ul {
-    grid-template-columns: 1fr;
-  }
-
-  .score-subsection {
-    margin: 8px 0;
-  }
-
-  .start-button {
-    padding: 12px 30px;
-    font-size: 1.1em;
-    margin: 20px auto;
-    width: 100%;
-    max-width: 280px;
-  }
-
-  .close-button {
-    top: 10px;
-    right: 10px;
-  }
-
-  .rules-section li {
-    padding-left: 20px;
-    margin: 8px 0;
-  }
-}
-
-/* 작은 모바일 화면 대응 */
-@media screen and (max-width: 360px) {
-  .modal {
-    padding: 12px;
-  }
-
-  .modal-title {
-    font-size: 1.2em;
-  }
-
-  .rules-section {
-    padding: 10px;
-    margin: 10px 0;
-  }
-
-  .rules-section h2 {
-    font-size: 1.1em;
-  }
-
-  .team-section,
-  .score-section {
-    padding: 8px;
-  }
-
-  .start-button {
-    padding: 10px 20px;
-    font-size: 1em;
   }
 }
