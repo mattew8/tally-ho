@@ -337,7 +337,6 @@ function App() {
 
   return (
     <>
-      {showRules && <RulesModal onClose={handleCloseRules} />}
       {showRoundStart && (
         <RoundStartModal
           round={gameState.round}
@@ -354,6 +353,7 @@ function App() {
       {showGameEnd && (
         <GameEndModal finalScores={finalScores} onClose={resetGame} />
       )}
+      {showRules && <RulesModal onClose={handleCloseRules} />}
       <div
         className={`game-container ${
           gameState.finalPhase ? "final-phase" : ""

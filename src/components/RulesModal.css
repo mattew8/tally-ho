@@ -241,33 +241,253 @@
   transform: scale(1.1);
 }
 
-/* 모바일 대응 */
+/* 모바일 (768px 이하) */
 @media screen and (max-width: 768px) {
   .rules-modal {
     height: 90vh;
-    width: 95%;
+    width: 100%;
+    border-radius: 0;
+    border: none;
+  }
+
+  .rules-modal-header {
+    padding: 15px;
   }
 
   .rules-modal-title {
-    font-size: 1.5em;
+    font-size: 1.4em;
+  }
+
+  .rules-modal-content {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    height: calc(100% - 60px);
+    position: relative;
   }
 
   .page-container {
-    min-height: 300px;
+    flex: 1;
+    min-height: 0;
+    padding: 10px;
+    margin: 5px 0;
+    position: relative;
+  }
+
+  .page-content {
+    flex: 1;
+    padding: 0 10px;
+    height: 100%;
+    overflow-y: auto;
+  }
+
+  .page-nav-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .page-nav-button:active {
+    transform: translateY(-50%);
+  }
+
+  .page-nav-button.prev {
+    left: 5px;
+  }
+
+  .page-nav-button.next {
+    right: 5px;
+  }
+
+  .page-indicator {
+    margin: 5px 0;
+    padding: 5px;
+    position: absolute;
+    bottom: 50px;
+    left: 0;
+    right: 0;
+  }
+
+  .rules-section {
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+
+  .rules-section h2 {
+    font-size: 1.2em;
+    margin-bottom: 10px;
+  }
+
+  .rules-section p,
+  .rules-section li {
+    font-size: 0.9em;
+    margin: 8px 0;
+  }
+
+  .team-section,
+  .score-section {
+    padding: 12px;
+    margin: 10px 0;
+  }
+
+  .score-subsection {
+    padding: 10px;
+    margin: 8px 0;
+  }
+
+  .start-button {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 300px;
+    margin: 0;
+    z-index: 1;
+  }
+
+  .close-button {
+    top: 15px;
+    right: 15px;
+    width: 35px;
+    height: 35px;
+    font-size: 18px;
+  }
+}
+
+/* 작은 모바일 (480px 이하) */
+@media screen and (max-width: 480px) {
+  .rules-modal {
+    height: 95vh;
+  }
+
+  .rules-modal-header {
+    padding: 12px;
+  }
+
+  .rules-modal-title {
+    font-size: 1.2em;
+  }
+
+  .rules-modal-content {
+    padding: 8px;
+  }
+
+  .page-container {
+    padding: 8px;
+  }
+
+  .page-content {
+    padding: 0 8px;
+  }
+
+  .page-nav-button {
+    width: 30px;
+    height: 30px;
+    font-size: 1.2em;
+  }
+
+  .rules-section {
+    padding: 10px;
+  }
+
+  .rules-section h2 {
+    font-size: 1.1em;
+  }
+
+  .rules-section p,
+  .rules-section li {
+    font-size: 0.85em;
+  }
+
+  .team-section h3,
+  .score-section h3 {
+    font-size: 1.1em;
+  }
+
+  .score-subsection h4 {
+    font-size: 1em;
+  }
+
+  .start-button {
+    bottom: 8px;
+    padding: 8px 16px;
+    font-size: 1em;
+  }
+
+  .close-button {
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+  }
+}
+
+/* 가로 모드 대응 */
+@media screen and (max-height: 600px) and (orientation: landscape) {
+  .rules-modal {
+    height: 95vh;
+  }
+
+  .page-container {
+    min-height: 0;
+  }
+
+  .start-button {
+    margin: 5px auto;
+  }
+}
+
+/* 터치 디바이스 대응 */
+@media (hover: none) {
+  .page-nav-button:hover:not(:disabled),
+  .start-button:hover,
+  .close-button:hover {
+    transform: translateY(-50%);
+  }
+
+  .page-nav-button:active:not(:disabled),
+  .start-button:active,
+  .close-button:active {
+    opacity: 0.8;
+    transform: translateY(-50%);
+  }
+}
+
+/* 태블릿 (768px ~ 1024px) */
+@media screen and (max-width: 1024px) {
+  .rules-modal {
+    width: 95%;
+    height: 70vh;
+  }
+
+  .rules-modal-title {
+    font-size: 1.8em;
+  }
+
+  .page-container {
+    min-height: 350px;
     padding: 15px;
   }
 
   .page-nav-button {
-    width: 40px;
-    height: 40px;
-    font-size: 1.5em;
+    width: 45px;
+    height: 45px;
+    font-size: 1.6em;
   }
 
   .rules-section {
-    padding: 15px;
+    padding: 18px;
   }
 
   .rules-section h2 {
-    font-size: 1.3em;
+    font-size: 1.4em;
+  }
+
+  .rules-section p,
+  .rules-section li {
+    font-size: 0.95em;
   }
 }
